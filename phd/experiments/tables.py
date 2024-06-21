@@ -117,8 +117,8 @@ def hstack_tables(tables, pdf_path):
         f.write(begin + cline + multicol1 + cline + multicol2 + corpus + end)
 
 
-def gen_n2e_tables():
-    pdf_path = f"tables/n2e/{PROBLEM}.pdf"
+def gen_phd_tables():
+    pdf_path = f"tables/{PROBLEM}.pdf"
 
     tables = []
     for acc_name in ACC_NAMES:
@@ -140,4 +140,4 @@ def gen_n2e_tables():
 
 
 if __name__ == "__main__":
-    gen_n2e_tables()
+    gen_phd_tables()
