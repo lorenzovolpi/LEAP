@@ -1,0 +1,14 @@
+# venv
+.venv
+
+# cache
+*__pycache__*
+
+# results
+dataset_stats
+results
+plots
+tables
+
+# log files
+*.log
