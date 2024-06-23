@@ -89,3 +89,11 @@ if __name__ == "__main__":
 
     all_datasets = [name for name, _ in gen_datasets(only_names=True)]
     classifiers = ["LR", "KNN", "SVM", "MLP"]
+    plot_grid_of_diagonals(
+        methods,
+        all_datasets,
+        classifiers,
+        filename="all",
+        n_cols=5,
+        legend_bbox_to_anchor=(0.84, 0.06),
+    )
