@@ -58,6 +58,8 @@ def plot_diagonal_grid(
     x_label="true accs.",
     y_label="estim. accs.",
     aspect=1,
+    xticks=None,
+    yticks=None,
     xtick_vert=False,
     hspace=0.1,
     wspace=0.1,
@@ -81,6 +83,10 @@ def plot_diagonal_grid(
         if xtick_vert:
             ax.tick_params(axis="x", labelrotation=90, labelsize=10)
             ax.tick_params(axis="y", labelsize=10)
+        if xticks is not None:
+            ax.set_xticks(xticks)
+        if yticks is not None:
+            ax.set_yticks(yticks)
 
     plot.figure.subplots_adjust(hspace=hspace, wspace=wspace)
     plot.set_titles("{col_name}")

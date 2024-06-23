@@ -1,5 +1,6 @@
 import itertools as IT
 
+import numpy as np
 import pandas as pd
 
 from leap.experiments.generators import gen_acc_measure, gen_bin_datasets
@@ -55,37 +56,43 @@ if __name__ == "__main__":
         "LEAP-plus": "LEAP$^+$",
     }
     selected_datasets = ["haberman", "cmc.2", "german", "iris.2", "yeast"]
+    # plot_grid_of_diagonals(
+    #     methods,
+    #     selected_datasets,
+    #     ["LR"],
+    #     filename="5x1-t",
+    #     n_cols=5,
+    #     legend_bbox_to_anchor=(0.5, 1),
+    #     legend_ncol=len(methods),
+    #     legend_wspace=0.08,
+    #     xtick_vert=True,
+    #     aspect=0.8,
+    #     xticks=np.linspace(0, 1, 6, endpoint=True),
+    #     yticks=np.linspace(0, 1, 6, endpoint=True),
+    # )
     plot_grid_of_diagonals(
         methods,
         selected_datasets,
         ["LR"],
         filename="5x1",
         n_cols=5,
-        legend_bbox_to_anchor=(0.5, 1),
-        legend_ncol=len(methods),
-        legend_wspace=0.08,
-        xtick_vert=True,
-        aspect=0.8,
-    )
-    plot_grid_of_diagonals(
-        methods,
-        selected_datasets,
-        ["LR"],
-        filename="5x1-s",
-        n_cols=5,
         legend_bbox_to_anchor=(0.96, 0.3),
         legend_wspace=0.08,
         xtick_vert=True,
         aspect=0.8,
+        xticks=np.linspace(0, 1, 6, endpoint=True),
+        yticks=np.linspace(0, 1, 6, endpoint=True),
     )
-    plot_grid_of_diagonals(
-        methods,
-        selected_datasets,
-        ["LR"],
-        filename="3x2",
-        n_cols=3,
-        legend_bbox_to_anchor=(0.77, 0.18),
-    )
+    # plot_grid_of_diagonals(
+    #     methods,
+    #     selected_datasets,
+    #     ["LR"],
+    #     filename="3x2",
+    #     n_cols=3,
+    #     legend_bbox_to_anchor=(0.77, 0.18),
+    #     xticks=np.linspace(0, 1, 6, endpoint=True),
+    #     yticks=np.linspace(0, 1, 6, endpoint=True),
+    # )
 
     all_datasets = [name for name, _ in gen_datasets(only_names=True)]
     classifiers = ["LR", "KNN", "SVM", "MLP"]
