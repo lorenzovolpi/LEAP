@@ -52,8 +52,8 @@ def gen_CAP_baselines(h, acc_fn, config, with_oracle=False) -> [str, CAPDirect]:
 
 def gen_CAP_cont_table(h, acc_fn, config) -> [str, CAPContingencyTable]:
     yield "Naive", NaiveCAP(h, acc_fn)
-    yield "PhD", LEAP(h, acc_fn, ACC(LR()), reuse_h=True)
-    yield "PhD-plus", LEAP(h, acc_fn, KDEyML(LR()), reuse_h=True)
+    yield "LEAP", LEAP(h, acc_fn, ACC(LR()), reuse_h=True)
+    yield "LEAP-plus", LEAP(h, acc_fn, KDEyML(LR()), reuse_h=True)
 
 
 def gen_methods(h, V, config, with_oracle=False):
