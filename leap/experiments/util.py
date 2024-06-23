@@ -47,7 +47,7 @@ def prevs_from_prot(prot):
     return [get_plain_prev(Ui.prevalence()) for Ui in prot()]
 
 
-def get_logger(id="quacc"):
+def get_logger(id="leap"):
     _name = f"{id}_log"
     _path = os.path.join(leap.env["OUT_DIR"], f"{id}.log")
     logger = logging.getLogger(_name)
