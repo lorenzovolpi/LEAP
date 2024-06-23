@@ -12,3 +12,6 @@ tables
 
 # log files
 *.log
+
+# html files
+*.html
