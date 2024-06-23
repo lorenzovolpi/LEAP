@@ -1,12 +1,12 @@
-# PhD
+# LEAP
 
 ## Setup
 
 To setup the environment for running the experiments, first clone the repository:
 
 ```bash
-git clone https://github.com/lorenzovolpi/PhD.git phd
-cd phd
+git clone https://github.com/lorenzovolpi/LEAP.git leap
+cd leap
 ```
 
 then create the python virtual environment and install requirements:
