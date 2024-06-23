@@ -10,15 +10,15 @@ from sklearn.neighbors import KNeighborsClassifier as KNN
 from sklearn.neural_network import MLPClassifier as MLP
 from sklearn.svm import SVC
 
-from phd.dataset import DatasetProvider as DP
-from phd.error import vanilla_acc
-from phd.models.cont_table import (
+from leap.dataset import DatasetProvider as DP
+from leap.error import vanilla_acc
+from leap.models.cont_table import (
+    LEAP,
     CAPContingencyTable,
     NaiveCAP,
-    PhD,
 )
-from phd.models.direct import ATC, CAPDirect, DoC
-from phd.utils.commons import get_results_path
+from leap.models.direct import ATC, CAPDirect, DoC
+from leap.utils.commons import get_results_path
 
 
 def gen_classifiers():
@@ -52,8 +52,8 @@ def gen_CAP_baselines(h, acc_fn, config, with_oracle=False) -> [str, CAPDirect]:
 
 def gen_CAP_cont_table(h, acc_fn, config) -> [str, CAPContingencyTable]:
     yield "Naive", NaiveCAP(h, acc_fn)
-    yield "PhD", PhD(h, acc_fn, ACC(LR()), reuse_h=True)
-    yield "PhD-plus", PhD(h, acc_fn, KDEyML(LR()), reuse_h=True)
+    yield "PhD", LEAP(h, acc_fn, ACC(LR()), reuse_h=True)
+    yield "PhD-plus", LEAP(h, acc_fn, KDEyML(LR()), reuse_h=True)
 
 
 def gen_methods(h, V, config, with_oracle=False):

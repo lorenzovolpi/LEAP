@@ -9,7 +9,7 @@ from quapy.method.aggregative import AggregativeQuantifier
 from sklearn.base import BaseEstimator
 from sklearn.metrics import confusion_matrix
 
-from phd.models.base import ClassifierAccuracyPrediction
+from leap.models.base import ClassifierAccuracyPrediction
 
 
 class CAPContingencyTable(ClassifierAccuracyPrediction):
@@ -242,4 +242,4 @@ class NsquaredEquationsCAP(CAPContingencyTableQ):
             return cont_table_test
 
 
-PhD = NsquaredEquationsCAP
+LEAP = NsquaredEquationsCAP

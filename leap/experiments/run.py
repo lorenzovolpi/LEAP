@@ -5,7 +5,7 @@ from traceback import print_exception
 import quapy as qp
 from quapy.protocol import UPP
 
-from phd.experiments.generators import (
+from leap.experiments.generators import (
     gen_acc_measure,
     gen_bin_datasets,
     gen_classifiers,
@@ -13,15 +13,15 @@ from phd.experiments.generators import (
     gen_product,
     get_method_names,
 )
-from phd.experiments.report import TestReport
-from phd.experiments.util import (
+from leap.experiments.report import TestReport
+from leap.experiments.util import (
     fit_or_switch,
     get_logger,
     get_plain_prev,
     get_predictions,
     prevs_from_prot,
 )
-from phd.utils.commons import save_dataset_stats, true_acc
+from leap.utils.commons import save_dataset_stats, true_acc
 
 PROBLEM = "binary"
 ORACLE = False

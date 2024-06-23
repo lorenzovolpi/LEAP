@@ -25,6 +25,7 @@ class Format:
     stat_test: str = "wilcoxon"
     color_mode: str = "local"
     with_mean: bool = True
+    mean_macro: bool = True
     with_rank_mean: bool = True
     only_full_mean: bool = True
     best_color: str = "green"
@@ -124,7 +125,8 @@ class Cell:
         # ---------------------------------------------------
         if self.format.color:
             group = self.local_group if self.format.color_mode == "local" else self.global_group
-            str_cell += " " + group.color(self)
+            # str_cell += ' ' + group.color(self)
+            str_cell += group.color(self)
 
         return str_cell
 
@@ -326,17 +328,28 @@ class Table:
             method_mean = Cell(self.format, local_group=mean_group, global_group=mean_global_group)
             leave_empty = False
             for bench in self.get_benchmarks():
-                mean_value = self.get_mean_value(benchmark=bench, method=method)
-                if not np.isnan(mean_value):
+                if self.format.mean_macro:
+                    # macro: adds the mean value for bench and method (mean across the means)
+                    mean_value = self.get_mean_value(benchmark=bench, method=method)
+                    add_value = not np.isnan(mean_value)
+                else:
+                    # micro: adds all values for bench and method (means across all values)
+                    mean_value = self.get(benchmark=bench, method=method).values
+                    add_value = mean_value is not None
+
+                if add_value:
                     method_mean.append(mean_value)
                 elif self.format.only_full_mean:
                     leave_empty = True
+
                 if leave_empty:
-                    break
+                    break  # with only one missing value, the average should not be computed
+
             if leave_empty:
                 cells.append(Cell(self.format, local_group=mean_group, global_group=mean_global_group))
             else:
                 cells.append(method_mean)
+
         return cells
 
     def get_method_rank_means(self, method_order):

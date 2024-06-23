@@ -1,7 +1,7 @@
 from quapy.data.base import LabelledCollection
 from quapy.data.datasets import fetch_UCIBinaryDataset
 
-from phd.environment import env
+from leap.environment import env
 
 TRAIN_VAL_PROP = 0.5
 

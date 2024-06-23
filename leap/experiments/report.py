@@ -6,8 +6,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-import phd
-from phd.utils.commons import get_results_path, load_json_file, save_json_file
+import leap
+from leap.utils.commons import get_results_path, load_json_file, save_json_file
 
 
 class TestReport:
@@ -109,8 +109,8 @@ class Report:
                     _results[method].append(_res)
         return Report(_results)
 
-    def table_data(self, mean=True, error=phd.error.ae):
-        assert error in phd.error.ACCURACY_ERROR_SINGLE, "Unknown error function"
+    def table_data(self, mean=True, error=leap.error.ae):
+        assert error in leap.error.ACCURACY_ERROR_SINGLE, "Unknown error function"
         dfs = []
         for _method, _results in self.results.items():
             _dataset_map = defaultdict(lambda: [])

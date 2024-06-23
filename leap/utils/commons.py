@@ -8,7 +8,7 @@ from quapy.data.base import LabelledCollection
 from sklearn.base import BaseEstimator
 from sklearn.metrics import confusion_matrix
 
-import phd
+import leap
 
 
 def save_json_file(path, data):
@@ -26,7 +26,7 @@ def load_json_file(path, object_hook=None):
 
 def get_results_path(basedir, cls_name, acc_name, dataset_name, method_name):
     return os.path.join(
-        phd.env["OUT_DIR"],
+        leap.env["OUT_DIR"],
         "results",
         basedir,
         cls_name,
@@ -36,15 +36,9 @@ def get_results_path(basedir, cls_name, acc_name, dataset_name, method_name):
     )
 
 
-def get_plots_path(basedir, cls_name, acc_name, dataset_name, plot_type, ext="svg"):
+def get_plots_path(cls_name, plot_type, filename, ext="svg"):
     return os.path.join(
-        phd.env["OUT_DIR"],
-        "plots",
-        basedir,
-        cls_name,
-        acc_name,
-        dataset_name,
-        f"{plot_type}.{ext}",
+        leap.env["OUT_DIR"], "plots", f"{cls_name}_{plot_type}_{filename}.{ext}"
     )
 
 
@@ -56,7 +50,7 @@ def true_acc(h: BaseEstimator, acc_fn: Callable, U: LabelledCollection):
 
 
 def save_dataset_stats(dataset_name, test_prot, L, V):
-    path = os.path.join(phd.env["OUT_DIR"], "dataset_stats", f"{dataset_name}.json")
+    path = os.path.join(leap.env["OUT_DIR"], "dataset_stats", f"{dataset_name}.json")
     test_prevs = [Ui.prevalence() for Ui in test_prot()]
     shifts = [qp.error.ae(L.prevalence(), Ui_prev) for Ui_prev in test_prevs]
     info = {

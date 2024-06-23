@@ -4,8 +4,8 @@ from time import time
 
 import numpy as np
 
-import phd
-from phd.models.base import ClassifierAccuracyPrediction
+import leap
+from leap.models.base import ClassifierAccuracyPrediction
 
 
 def fit_or_switch(method: ClassifierAccuracyPrediction, V, acc_fn, is_fit):
@@ -49,7 +49,7 @@ def prevs_from_prot(prot):
 
 def get_logger(id="quacc"):
     _name = f"{id}_log"
-    _path = os.path.join(phd.env["OUT_DIR"], f"{id}.log")
+    _path = os.path.join(leap.env["OUT_DIR"], f"{id}.log")
     logger = logging.getLogger(_name)
     logger.setLevel(logging.DEBUG)
     if len(logger.handlers) == 0:

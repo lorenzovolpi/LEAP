@@ -7,8 +7,8 @@ from sklearn.base import BaseEstimator
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import confusion_matrix
 
-from phd.models.base import ClassifierAccuracyPrediction
-from phd.models.utils import get_posteriors_from_h, max_conf, neg_entropy
+from leap.models.base import ClassifierAccuracyPrediction
+from leap.models.utils import get_posteriors_from_h, max_conf, neg_entropy
 
 
 class CAPDirect(ClassifierAccuracyPrediction):
