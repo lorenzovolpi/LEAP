@@ -4,19 +4,18 @@ from collections import defaultdict
 from io import StringIO
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
-import quacc as qc
-from quacc.experiments.generators import (
+
+import leap
+from leap.experiments.generators import (
     gen_acc_measure,
     gen_bin_datasets,
-    gen_classifiers,
 )
-from quacc.experiments.report import Report
-from quacc.table import Format, Table
+from leap.experiments.report import Report
+from leap.table import Format, Table
 
 PROBLEM = "binary"
-ERROR = qc.error.ae
+ERROR = leap.error.ae
 
 if PROBLEM == "binary":
     gen_datasets = gen_bin_datasets
@@ -129,7 +128,7 @@ def hstack_tables(tables, pdf_path):
 
 
 def gen_n2e_tables():
-    pdf_path = f"tables/n2e/{PROBLEM}.pdf"
+    pdf_path = f"tables/{PROBLEM}.pdf"
 
     tables = []
     for acc_name in ACC_NAMES:
