@@ -15,3 +15,6 @@ tables
 
 # html files
 *.html
+
+# bash files
+*.sh
