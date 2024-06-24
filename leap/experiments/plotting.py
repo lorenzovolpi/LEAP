@@ -55,7 +55,8 @@ if __name__ == "__main__":
         "LEAP": "LEAP",
         "LEAP-plus": "LEAP$^+$",
     }
-    selected_datasets = ["haberman", "cmc.2", "german", "iris.2", "yeast"]
+    # selected_datasets = ["haberman", "cmc.2", "german", "iris.2", "yeast"]
+    selected_datasets = ["sonar", "haberman", "cmc.2", "german", "iris.2"]
     # plot_grid_of_diagonals(
     #     methods,
     #     selected_datasets,
