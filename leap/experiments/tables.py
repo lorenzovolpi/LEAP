@@ -36,7 +36,7 @@ def rename_method(m):
 
 
 def rename_cls(cls):
-    cls_dict = {"KNN": "$k$-NN"}
+    cls_dict = {"KNN": "$k$NN"}
     return cls_dict.get(cls, cls)
 
 
