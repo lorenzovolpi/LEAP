@@ -55,22 +55,7 @@ if __name__ == "__main__":
         "LEAP": "LEAP",
         "LEAP-plus": "LEAP$^+$",
     }
-    # selected_datasets = ["haberman", "cmc.2", "german", "iris.2", "yeast"]
     selected_datasets = ["sonar", "haberman", "cmc.2", "german", "iris.2"]
-    # plot_grid_of_diagonals(
-    #     methods,
-    #     selected_datasets,
-    #     ["LR"],
-    #     filename="5x1-t",
-    #     n_cols=5,
-    #     legend_bbox_to_anchor=(0.5, 1),
-    #     legend_ncol=len(methods),
-    #     legend_wspace=0.08,
-    #     xtick_vert=True,
-    #     aspect=0.8,
-    #     xticks=np.linspace(0, 1, 6, endpoint=True),
-    #     yticks=np.linspace(0, 1, 6, endpoint=True),
-    # )
     plot_grid_of_diagonals(
         methods,
         selected_datasets,
@@ -84,16 +69,6 @@ if __name__ == "__main__":
         xticks=np.linspace(0, 1, 6, endpoint=True),
         yticks=np.linspace(0, 1, 6, endpoint=True),
     )
-    # plot_grid_of_diagonals(
-    #     methods,
-    #     selected_datasets,
-    #     ["LR"],
-    #     filename="3x2",
-    #     n_cols=3,
-    #     legend_bbox_to_anchor=(0.77, 0.18),
-    #     xticks=np.linspace(0, 1, 6, endpoint=True),
-    #     yticks=np.linspace(0, 1, 6, endpoint=True),
-    # )
 
     all_datasets = [name for name, _ in gen_datasets(only_names=True)]
     classifiers = ["LR", "KNN", "SVM", "MLP"]
