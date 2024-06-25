@@ -23,21 +23,20 @@ python -m pip install -r requirements.txt
 To run the experiments shown in the cited paper, run:
 
 ```bash
-python -m phd.experiments.run
+python -m leap.experiments.run
 ```
 
 To generate the plots run:
 
 ```bash
-python -m phd.experiments.plotting
+python -m leap.experiments.plotting
 ```
 
 To generate the tables run:
 
 ```bash
-python -m phd.experiments.tables
+python -m leap.experiments.tables
 ```
 
 The results for the experiments, the plots and the tables will be saved, respectively, in `results`, `plots` and `tables`, all rooted in the current folder.  
 To change the output root folder export the `PHD_OUT_DIR` environment variable before running the above commands.
-
