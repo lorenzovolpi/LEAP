@@ -6,7 +6,7 @@
 
 # results
 dataset_stats
-# results
+results
 # plots
 tables
 
@@ -15,3 +15,6 @@ tables
 
 # html files
 *.html
+
+# bash files
+*.sh

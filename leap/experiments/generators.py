@@ -25,7 +25,7 @@ def gen_classifiers():
     yield "LR", LR()
     yield "KNN", KNN(n_neighbors=10)
     yield "SVM", SVC(probability=True)
-    yield "MLP", MLP(hidden_layer_sizes=(100,) * 5, max_iter=300, random_state=0)
+    yield "MLP", MLP(hidden_layer_sizes=(100, 15), random_state=0)
 
 
 def gen_bin_datasets(
