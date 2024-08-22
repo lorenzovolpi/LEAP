@@ -3,3 +3,6 @@ name = "leap"
 version = "0.1.0"
 requires-python = ">=3.10"
 dependencies = ["quapy>=0.1.8", "seaborn>=0.13.2", "certifi>=2024.2.2"]
+
+[tool.ruff]
+line-length = 120
