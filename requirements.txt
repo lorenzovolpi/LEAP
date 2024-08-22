@@ -13,7 +13,7 @@ pillow==10.3.0
 pyparsing==3.1.2
 python-dateutil==2.9.0.post0
 pytz==2024.1
-QuaPy==0.1.8.1
+QuaPy @ git+https://github.com/HLT-ISTI/QuaPy.git@4474653a25b08006bc7b0a394a9456aa1e8c1fa6
 scikit-learn==1.5.0
 scipy==1.13.1
 seaborn==0.13.2
