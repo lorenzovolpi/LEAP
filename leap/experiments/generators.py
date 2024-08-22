@@ -2,7 +2,7 @@ import os
 
 import quapy as qp
 from quapy.data.base import LabelledCollection
-from quapy.data.datasets import UCI_BINARY_DATASETS
+from quapy.data.datasets import UCI_BINARY_DATASETS, UCI_MULTICLASS_DATASETS, fetch_UCIMulticlassDataset
 from quapy.method._kdey import KDEyML
 from quapy.method.aggregative import ACC
 from sklearn.linear_model import LogisticRegression as LR
@@ -36,6 +36,14 @@ def gen_bin_datasets(
     for dn in _uci_names:
         dval = None if only_names else DP.uci_binary(dn)
         yield dn, dval
+
+
+def gen_multi_datasets(
+    only_names=False,
+) -> [str, [LabelledCollection, LabelledCollection, LabelledCollection]]:
+    # yields the UCI multiclass datasets
+    for dataset_name in [d for d in UCI_MULTICLASS_DATASETS if d not in ["wine-quality", "letter"]]:
+        yield dataset_name, None if only_names else fetch_UCIMulticlassDataset(dataset_name)
 
 
 def gen_product(gen1, gen2):
@@ -81,8 +89,6 @@ def gen_acc_measure(multiclass=False):
 
 def any_missing(basedir, cls_name, dataset_name, method_name):
     for acc_name, _ in gen_acc_measure():
-        if not os.path.exists(
-            get_results_path(basedir, cls_name, acc_name, dataset_name, method_name)
-        ):
+        if not os.path.exists(get_results_path(basedir, cls_name, acc_name, dataset_name, method_name)):
             return True
     return False
