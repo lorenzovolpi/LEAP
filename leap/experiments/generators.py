@@ -2,7 +2,7 @@ import os
 
 import quapy as qp
 from quapy.data.base import LabelledCollection
-from quapy.data.datasets import UCI_BINARY_DATASETS, UCI_MULTICLASS_DATASETS, fetch_UCIMulticlassDataset
+from quapy.data.datasets import UCI_BINARY_DATASETS, UCI_MULTICLASS_DATASETS
 from quapy.method._kdey import KDEyML
 from quapy.method.aggregative import ACC
 from sklearn.linear_model import LogisticRegression as LR
@@ -42,8 +42,11 @@ def gen_multi_datasets(
     only_names=False,
 ) -> [str, [LabelledCollection, LabelledCollection, LabelledCollection]]:
     # yields the UCI multiclass datasets
-    for dataset_name in [d for d in UCI_MULTICLASS_DATASETS if d not in ["wine-quality", "letter"]]:
-        yield dataset_name, None if only_names else fetch_UCIMulticlassDataset(dataset_name)
+    _uci_skip = ["wine-quality", "letter"]
+    _uci_names = [d for d in UCI_MULTICLASS_DATASETS if d not in _uci_skip]
+    for dn in _uci_names:
+        dval = None if only_names else DP.uci_multiclass(dn)
+        yield dn, dval
 
 
 def gen_product(gen1, gen2):

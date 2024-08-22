@@ -1,5 +1,5 @@
 from quapy.data.base import LabelledCollection
-from quapy.data.datasets import fetch_UCIBinaryDataset
+from quapy.data.datasets import fetch_UCIBinaryDataset, fetch_UCIMulticlassDataset
 
 from leap.environment import env
 
@@ -14,5 +14,11 @@ class DatasetProvider:
     @classmethod
     def uci_binary(cls, dataset_name, data_home=env["QUAPY_DATA"]):
         train, U = fetch_UCIBinaryDataset(dataset_name, data_home=data_home).train_test
+        T, V = cls._split_train(train)
+        return T, V, U
+
+    @classmethod
+    def uci_multiclass(cls, dataset_name, data_home=env["QUAPY_DATA"]):
+        train, U = fetch_UCIMulticlassDataset(dataset_name, data_home=data_home).train_test
         T, V = cls._split_train(train)
         return T, V, U
