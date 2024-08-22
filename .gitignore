@@ -18,3 +18,4 @@ tables
 
 # bash files
 *.sh
+*.env
