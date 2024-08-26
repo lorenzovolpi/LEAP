@@ -23,7 +23,7 @@ from leap.utils.commons import get_results_path
 
 def gen_classifiers():
     yield "LR", LR()
-    # yield "KNN", KNN(n_neighbors=10)
+    yield "KNN", KNN(n_neighbors=10)
     yield "SVM", SVC(probability=True)
     yield "MLP", MLP(hidden_layer_sizes=(100, 15), random_state=0)
 
@@ -42,7 +42,7 @@ def gen_multi_datasets(
     only_names=False,
 ) -> [str, [LabelledCollection, LabelledCollection, LabelledCollection]]:
     # yields the UCI multiclass datasets
-    _uci_skip = ["wine-quality", "letter"]
+    _uci_skip = ["wine-quality", "letter", "isolet"]
     _uci_names = [d for d in UCI_MULTICLASS_DATASETS if d not in _uci_skip]
     for dn in _uci_names:
         dval = None if only_names else DP.uci_multiclass(dn)
