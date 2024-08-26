@@ -10,15 +10,18 @@ import leap
 from leap.experiments.generators import (
     gen_acc_measure,
     gen_bin_datasets,
+    gen_multi_datasets,
 )
 from leap.experiments.report import Report
 from leap.table import Format, Table
 
-PROBLEM = "binary"
+PROBLEM = "multiclass"
 ERROR = leap.error.ae
 
 if PROBLEM == "binary":
     gen_datasets = gen_bin_datasets
+elif PROBLEM == "multiclass":
+    gen_datasets = gen_multi_datasets
 
 BENCHMARKS = [name for name, _ in gen_datasets(only_names=True)]
 METHODS = ["Naive", "ATC", "DoC", "LEAP", "LEAP-plus"]
@@ -42,14 +45,10 @@ def rename_cls(cls):
 
 def table_from_df(df: pd.DataFrame, name, benchmarks, methods) -> Table:
     tbl = Table(name=name, benchmarks=benchmarks, methods=methods)
-    tbl.format = Format(
-        mean_prec=3, show_std=False, remove_zero=True, with_rank_mean=False
-    )
+    tbl.format = Format(mean_prec=3, show_std=False, remove_zero=True, with_rank_mean=False)
     tbl.format.mean_macro = False
     for dataset, method in IT.product(benchmarks, methods):
-        values = df.loc[
-            (df["dataset"] == dataset) & (df["method"] == method), ["acc_err"]
-        ].to_numpy()
+        values = df.loc[(df["dataset"] == dataset) & (df["method"] == method), ["acc_err"]].to_numpy()
         for v in values:
             tbl.add(dataset, method, v)
 
@@ -93,30 +92,18 @@ def hstack_tables(tables, pdf_path):
         corpus.append(f"{name} & {row} {tbl_endline[name]}")
     corpus = "\n".join(corpus) + "\n"
     header = "\\setlength{\\tabcolsep}{0pt}\n"
-    begin = (
-        "\\begin{tabular}{|c|" + (("c" * len(METHODS)) + "|") * len(CLASSIFIERS) + "}\n"
-    )
+    begin = "\\begin{tabular}{|c|" + (("c" * len(METHODS)) + "|") * len(CLASSIFIERS) + "}\n"
     end = "\\end{tabular}\n"
     cline = "\\cline{2-" + str(len(METHODS) * len(CLASSIFIERS) + 1) + "}\n"
     multicol1 = (
         "\\multicolumn{1}{c|}{} & "
-        + " & ".join(
-            [
-                "\\multicolumn{" + str(len(METHODS)) + "}{c|}{" + rename_cls(cls) + "}"
-                for cls in CLASSIFIERS
-            ]
-        )
+        + " & ".join(["\\multicolumn{" + str(len(METHODS)) + "}{c|}{" + rename_cls(cls) + "}" for cls in CLASSIFIERS])
         + " \\\\\n"
     )
     tbl_methods = [rename_method(m) for m in METHODS]
     multicol2 = (
         "\\multicolumn{1}{c|}{} & "
-        + " & ".join(
-            [
-                " & ".join(["\\side{" + m + "}" for m in tbl_methods])
-                for _ in CLASSIFIERS
-            ]
-        )
+        + " & ".join([" & ".join(["\\side{" + m + "}" for m in tbl_methods]) for _ in CLASSIFIERS])
         + " \\\\\\hline\n"
     )
 
@@ -140,9 +127,7 @@ def gen_n2e_tables():
 
             # build table
             tbl_name = f"{PROBLEM}_{cls_name}_{acc_name}"
-            tbl = table_from_df(
-                df, name=tbl_name, benchmarks=BENCHMARKS, methods=METHODS
-            )
+            tbl = table_from_df(df, name=tbl_name, benchmarks=BENCHMARKS, methods=METHODS)
             tables.append(tbl)
 
     Table.LatexPDF(pdf_path=pdf_path, tables=tables, landscape=False)
