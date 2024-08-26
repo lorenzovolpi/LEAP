@@ -23,7 +23,7 @@ from leap.utils.commons import get_results_path
 
 def gen_classifiers():
     yield "LR", LR()
-    yield "KNN", KNN(n_neighbors=10)
+    # yield "KNN", KNN(n_neighbors=10)
     yield "SVM", SVC(probability=True)
     yield "MLP", MLP(hidden_layer_sizes=(100, 15), random_state=0)
 
