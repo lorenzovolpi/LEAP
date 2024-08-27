@@ -92,9 +92,7 @@ class Report:
         self.results = results
 
     @classmethod
-    def load_results(
-        cls, basedir, cls_name, acc_name, dataset_name="*", method_name="*"
-    ) -> "Report":
+    def load_results(cls, basedir, cls_name, acc_name, dataset_name="*", method_name="*") -> "Report":
         _results = defaultdict(lambda: [])
         if isinstance(method_name, str):
             method_name = [method_name]
