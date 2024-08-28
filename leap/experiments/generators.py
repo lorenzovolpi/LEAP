@@ -12,6 +12,7 @@ from sklearn.svm import SVC
 
 from leap.dataset import DatasetProvider as DP
 from leap.error import vanilla_acc
+from leap.models.base import CAP
 from leap.models.cont_table import (
     LEAP,
     CAPContingencyTable,
@@ -57,12 +58,12 @@ def gen_product(gen1, gen2):
 
 
 ### baselines ###
-def gen_CAP_baselines(h, acc_fn, config, with_oracle=False) -> [str, CAPDirect]:
+def gen_CAP_baselines(h, acc_fn) -> [str, CAPDirect]:
     yield "ATC", ATC(h, acc_fn, scoring_fn="maxconf")
     yield "DoC", DoC(h, acc_fn, sample_size=qp.environ["SAMPLE_SIZE"])
 
 
-def gen_CAP_cont_table(h, acc_fn, config) -> [str, CAPContingencyTable]:
+def gen_CAP_cont_table(h, acc_fn) -> [str, CAPContingencyTable]:
     yield "Naive", NaiveCAP(h, acc_fn)
     yield "LEAPcc", LEAP(h, acc_fn, CC(LR()), reuse_h=True)
     yield "LEAP", LEAP(h, acc_fn, ACC(LR()), reuse_h=True)
@@ -71,15 +72,26 @@ def gen_CAP_cont_table(h, acc_fn, config) -> [str, CAPContingencyTable]:
     yield "NaiveRescaling-plus", NaiveRescalingCAP(h, acc_fn, KDEyML(LR()), reuse_h=True)
 
 
-def gen_methods(h, V, config, with_oracle=False):
-    config = "multiclass" if config is None else config
+def gen_CAP_CT_with_oracle(h, acc_fn) -> [str, CAPContingencyTable]:
+    yield "LEAP-oracle", LEAP(h, acc_fn, ACC(LR()), reuse_h=True)
 
+
+def gen_methods(h) -> [str, CAP, bool]:
+    """
+    A generator to create all methods for the current experiment
+
+    :param h: the classifier used to create the method instances
+    :return: tuples comprised of name of the method, instance of the method and flag indicating
+             weather the method expects an oracle
+    """
     _, acc_fn = next(gen_acc_measure())
 
-    for name, method in gen_CAP_baselines(h, acc_fn, config, with_oracle):
-        yield name, method, V
-    for name, method in gen_CAP_cont_table(h, acc_fn, config):
-        yield name, method, V
+    for name, method in gen_CAP_baselines(h, acc_fn):
+        yield name, method, False
+    for name, method in gen_CAP_cont_table(h, acc_fn):
+        yield name, method, False
+    for name, method in gen_CAP_cont_table(h, acc_fn):
+        yield name, method, True
 
 
 def get_method_names(config):
