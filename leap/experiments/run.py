@@ -42,7 +42,7 @@ log = get_logger()
 
 
 def all_exist_pre_check(basedir, cls_name, dataset_name):
-    method_names = get_method_names(PROBLEM)
+    method_names = get_method_names()
     acc_names = [acc_name for acc_name, _ in gen_acc_measure()]
 
     all_exist = True
