@@ -90,7 +90,7 @@ def gen_methods(h) -> [str, CAP, bool]:
         yield name, method, False
     for name, method in gen_CAP_cont_table(h, acc_fn):
         yield name, method, False
-    for name, method in gen_CAP_cont_table(h, acc_fn):
+    for name, method in gen_CAP_CT_with_oracle(h, acc_fn):
         yield name, method, True
 
 
