@@ -45,7 +45,7 @@ def rename_cls(cls):
 
 def table_from_df(df: pd.DataFrame, name, benchmarks, methods) -> Table:
     tbl = Table(name=name, benchmarks=benchmarks, methods=methods)
-    tbl.format = Format(mean_prec=3, show_std=False, remove_zero=True, with_rank_mean=False)
+    tbl.format = Format(mean_prec=3, show_std=False, remove_zero=True, with_rank_mean=True)
     tbl.format.mean_macro = False
     for dataset, method in IT.product(benchmarks, methods):
         values = df.loc[(df["dataset"] == dataset) & (df["method"] == method), ["acc_err"]].to_numpy()
