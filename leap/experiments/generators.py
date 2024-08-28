@@ -94,11 +94,11 @@ def gen_methods(h) -> [str, CAP, bool]:
         yield name, method, True
 
 
-def get_method_names(config):
+def get_method_names():
     mock_h = LR()
     _, mock_acc_fn = next(gen_acc_measure())
-    return [m for m, _ in gen_CAP_baselines(mock_h, mock_acc_fn, config)] + [
-        m for m, _ in gen_CAP_cont_table(mock_h, mock_acc_fn, config)
+    return [m for m, _ in gen_CAP_baselines(mock_h, mock_acc_fn)] + [
+        m for m, _ in gen_CAP_cont_table(mock_h, mock_acc_fn)
     ]
 
 
