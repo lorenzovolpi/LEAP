@@ -4,7 +4,7 @@ import quapy as qp
 from quapy.data.base import LabelledCollection
 from quapy.data.datasets import UCI_BINARY_DATASETS, UCI_MULTICLASS_DATASETS
 from quapy.method._kdey import KDEyML
-from quapy.method.aggregative import ACC
+from quapy.method.aggregative import ACC, CC
 from sklearn.linear_model import LogisticRegression as LR
 from sklearn.neighbors import KNeighborsClassifier as KNN
 from sklearn.neural_network import MLPClassifier as MLP
@@ -16,6 +16,7 @@ from leap.models.cont_table import (
     LEAP,
     CAPContingencyTable,
     NaiveCAP,
+    NaiveRescalingCAP,
 )
 from leap.models.direct import ATC, CAPDirect, DoC
 from leap.utils.commons import get_results_path
@@ -63,8 +64,11 @@ def gen_CAP_baselines(h, acc_fn, config, with_oracle=False) -> [str, CAPDirect]:
 
 def gen_CAP_cont_table(h, acc_fn, config) -> [str, CAPContingencyTable]:
     yield "Naive", NaiveCAP(h, acc_fn)
+    yield "LEAPcc", LEAP(h, acc_fn, CC(LR()), reuse_h=True)
     yield "LEAP", LEAP(h, acc_fn, ACC(LR()), reuse_h=True)
     yield "LEAP-plus", LEAP(h, acc_fn, KDEyML(LR()), reuse_h=True)
+    yield "NaiveRescaling", NaiveRescalingCAP(h, acc_fn, ACC(LR()), reuse_h=True)
+    yield "NaiveRescaling-plus", NaiveRescalingCAP(h, acc_fn, KDEyML(LR()), reuse_h=True)
 
 
 def gen_methods(h, V, config, with_oracle=False):
