@@ -97,9 +97,11 @@ def gen_methods(h) -> [str, CAP, bool]:
 def get_method_names():
     mock_h = LR()
     _, mock_acc_fn = next(gen_acc_measure())
-    return [m for m, _ in gen_CAP_baselines(mock_h, mock_acc_fn)] + [
-        m for m, _ in gen_CAP_cont_table(mock_h, mock_acc_fn)
-    ]
+    return (
+        [m for m, _ in gen_CAP_baselines(mock_h, mock_acc_fn)]
+        + [m for m, _ in gen_CAP_cont_table(mock_h, mock_acc_fn)]
+        + [m for m, _ in gen_CAP_CT_with_oracle(mock_h, mock_acc_fn)]
+    )
 
 
 def gen_acc_measure(multiclass=False):
