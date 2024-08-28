@@ -15,18 +15,33 @@ from leap.experiments.generators import (
 from leap.experiments.report import Report
 from leap.table import Format, Table
 
-PROBLEM = "multiclass"
+PROBLEM = "binary_oracle"
 ERROR = leap.error.ae
+
+METHODS = ["Naive", "ATC", "DoC", "LEAP", "LEAP-plus"]
+CLASSIFIERS = ["LR", "KNN", "SVM", "MLP"]
 
 if PROBLEM == "binary":
     gen_datasets = gen_bin_datasets
+elif PROBLEM == "binary_ext":
+    gen_datasets = gen_bin_datasets
+    METHODS += ["LEAPcc", "NaiveRescaling", "NaiveRescaling-plus"]
+elif PROBLEM == "binary_oracle":
+    gen_datasets = gen_bin_datasets
+    METHODS += ["LEAPcc", "NaiveRescaling", "NaiveRescaling-plus", "LEAP-oracle", "NaiveRescaling-oracle"]
 elif PROBLEM == "multiclass":
     gen_datasets = gen_multi_datasets
 
 BENCHMARKS = [name for name, _ in gen_datasets(only_names=True)]
-METHODS = ["Naive", "ATC", "DoC", "LEAP", "LEAP-plus"]
-CLASSIFIERS = ["LR", "KNN", "SVM", "MLP"]
 ACC_NAMES = [acc_name for acc_name, _ in gen_acc_measure()]
+
+
+def get_results_problem(problem):
+    problems = {
+        "binary_oracle": "binary",
+        "binary_ext": "binary",
+    }
+    return problems.get(problem, problem)
 
 
 def rename_method(m):
@@ -120,7 +135,7 @@ def gen_n2e_tables():
     tables = []
     for acc_name in ACC_NAMES:
         for cls_name in CLASSIFIERS:
-            rep = Report.load_results(PROBLEM, cls_name, acc_name, BENCHMARKS, METHODS)
+            rep = Report.load_results(get_results_problem(PROBLEM), cls_name, acc_name, BENCHMARKS, METHODS)
             df = rep.table_data(mean=False, error=ERROR)
 
             cls_name = rename_cls(cls_name)
