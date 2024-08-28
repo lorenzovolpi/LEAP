@@ -121,14 +121,14 @@ class NaiveRescalingCAP(CAPContingencyTableQ):
     ):
         super().__init__(h, acc_fn, q_class, reuse_h)
 
-    def preprocess_data(self, data: LabelledCollection, posteriors):
-        y_hat = np.argmax(posteriors, axis=-1)
+    def preprocess_data(self, data: LabelledCollection):
+        y_hat = self.h.predict(data.X)
         y_true = data.y
         self.cont_table = confusion_matrix(y_true=y_true, y_pred=y_hat, labels=data.classes_, normalize="all")
         self.train_prev = data.prevalence()
         return data
 
-    def predict_ct(self, test, posteriors, oracle_prev=None):
+    def predict_ct(self, test, oracle_prev=None):
         """
         :param test: test collection (ignored)
         :param oracle_prev: np.ndarray with the class prevalence of the test set as estimated by
