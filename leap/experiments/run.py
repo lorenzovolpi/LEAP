@@ -24,7 +24,7 @@ from leap.experiments.util import (
 )
 from leap.utils.commons import save_dataset_stats, true_acc
 
-PROBLEM = "multiclass"
+PROBLEM = "binary"
 ORACLE = False
 basedir = PROBLEM + ("-oracle" if ORACLE else "")
 
