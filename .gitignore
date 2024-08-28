@@ -12,6 +12,7 @@ tables
 
 # log files
 *.log
+*.out
 
 # html files
 *.html
