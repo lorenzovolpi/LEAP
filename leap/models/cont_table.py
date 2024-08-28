@@ -109,7 +109,7 @@ class CAPContingencyTableQ(CAPContingencyTable, BaseEstimator):
         return self
 
 
-class ContTableTransferCAP(CAPContingencyTableQ):
+class NaiveRescalingCAP(CAPContingencyTableQ):
     """ """
 
     def __init__(
