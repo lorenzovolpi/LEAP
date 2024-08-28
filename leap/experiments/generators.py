@@ -74,6 +74,7 @@ def gen_CAP_cont_table(h, acc_fn) -> [str, CAPContingencyTable]:
 
 def gen_CAP_CT_with_oracle(h, acc_fn) -> [str, CAPContingencyTable]:
     yield "LEAP-oracle", LEAP(h, acc_fn, ACC(LR()), reuse_h=True)
+    yield "NaiveRescaling-oracle", NaiveRescalingCAP(h, acc_fn, ACC(LR()), reuse_h=True)
 
 
 def gen_methods(h) -> [str, CAP, bool]:
