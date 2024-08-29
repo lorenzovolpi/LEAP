@@ -15,7 +15,7 @@ from leap.experiments.generators import (
 from leap.experiments.report import Report
 from leap.table import Format, Table
 
-PROBLEM = "binary_oracle"
+PROBLEM = "binary_paper"
 ERROR = leap.error.ae
 
 METHODS = ["Naive", "ATC", "DoC", "LEAP", "LEAP-plus"]
@@ -29,6 +29,10 @@ elif PROBLEM == "binary_ext":
 elif PROBLEM == "binary_oracle":
     gen_datasets = gen_bin_datasets
     METHODS += ["LEAPcc", "NaiveRescaling", "NaiveRescaling-plus", "LEAP-oracle", "NaiveRescaling-oracle"]
+elif PROBLEM == "binary_paper":
+    gen_datasets = gen_bin_datasets
+    METHODS = ["Naive", "ATC", "DoC", "LEAPcc", "LEAP", "LEAP-plus", "LEAP-oracle"]
+    CLASSIFIERS = ["LR", "MLP"]
 elif PROBLEM == "multiclass":
     gen_datasets = gen_multi_datasets
 
@@ -40,6 +44,7 @@ def get_results_problem(problem):
     problems = {
         "binary_oracle": "binary",
         "binary_ext": "binary",
+        "binary_paper": "binary",
     }
     return problems.get(problem, problem)
 
@@ -49,6 +54,8 @@ def rename_method(m):
         "Naive": "\\naive",
         "LEAP": "\\phd",
         "LEAP-plus": "\\phdplus",
+        "LEAP-oracle": "\\phdoracle",
+        "LEAPcc": "\\phdcc",
     }
     return methods_dict.get(m, m)
 
@@ -60,7 +67,7 @@ def rename_cls(cls):
 
 def table_from_df(df: pd.DataFrame, name, benchmarks, methods) -> Table:
     tbl = Table(name=name, benchmarks=benchmarks, methods=methods)
-    tbl.format = Format(mean_prec=3, show_std=False, remove_zero=True, with_rank_mean=True)
+    tbl.format = Format(mean_prec=4, show_std=False, remove_zero=True, with_rank_mean=False, with_mean=False)
     tbl.format.mean_macro = False
     for dataset, method in IT.product(benchmarks, methods):
         values = df.loc[(df["dataset"] == dataset) & (df["method"] == method), ["acc_err"]].to_numpy()
