@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scikit_posthocs as sp
-import scipy.stats as ss
+from Orange.evaluation import scoring
 
 import leap
 from leap.experiments.generators import gen_acc_measure, gen_bin_datasets, gen_multi_datasets
@@ -39,7 +39,7 @@ def get_results_problem(problem):
     return problems.get(problem, problem)
 
 
-if __name__ == "__main__":
+def scikit():
     for acc_name in ACC_NAMES:
         for cls_name in CLASSIFIERS:
             plt_dir = os.path.join(os.path.expanduser("~/leap/plots/CD"), acc_name)
@@ -105,3 +105,13 @@ if __name__ == "__main__":
     # plt.title("CD")
     # sp.critical_difference_diagram(avg_rank, test_results)
     # plt.show()
+
+
+def orange():
+    avranks = [1.9, 3.2, 2.8, 3.3]
+    cd = scoring.compute_CD(avranks, 30)  # tested on 30 datasets
+    print(cd)
+
+
+if __name__ == "__main__":
+    orange()
