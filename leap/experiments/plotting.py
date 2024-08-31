@@ -62,7 +62,7 @@ if __name__ == "__main__":
         "LEAP": "#2ca02c",
         "LEAP-plus": "#d62728",
         "LEAPcc": "#9467bd",
-        "LEAP-oracle": "#e377c2",
+        "LEAP-oracle": "#bcbd22",
     }
 
     methods = ["ATC", "DoC", "LEAP", "LEAP-plus"]
@@ -100,7 +100,7 @@ if __name__ == "__main__":
         selected_datasets,
         ["LR"],
         [color_palette[m] for m in methods],
-        filename="upper_lower",
+        filename="ul_5x1",
         n_cols=5,
         legend_bbox_to_anchor=(0.96, 0.3),
         legend_wspace=0.08,
@@ -108,4 +108,14 @@ if __name__ == "__main__":
         aspect=0.8,
         xticks=np.linspace(0, 1, 6, endpoint=True),
         yticks=np.linspace(0, 1, 6, endpoint=True),
+    )
+
+    plot_grid_of_diagonals(
+        {k: methods_dict[k] for k in methods},
+        all_datasets,
+        classifiers,
+        [color_palette[m] for m in methods],
+        filename="ul_all",
+        n_cols=5,
+        legend_bbox_to_anchor=(0.84, 0.06),
     )
