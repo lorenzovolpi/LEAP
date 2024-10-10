@@ -66,11 +66,13 @@ if __name__ == "__main__":
     }
 
     methods = ["ATC", "DoC", "LEAP", "LEAP-plus"]
+    classifiers = ["LR", "KNN", "SVM", "MLP"]
     selected_datasets = ["sonar", "haberman", "cmc.2", "german", "iris.2"]
     plot_grid_of_diagonals(
         {k: methods_dict[k] for k in methods},
         selected_datasets,
-        ["LR"],
+        # ["LR"],
+        classifiers,
         [color_palette[m] for m in methods],
         filename="5x1",
         n_cols=5,
@@ -83,7 +85,6 @@ if __name__ == "__main__":
     )
 
     all_datasets = [name for name, _ in gen_datasets(only_names=True)]
-    classifiers = ["LR", "KNN", "SVM", "MLP"]
     plot_grid_of_diagonals(
         {k: methods_dict[k] for k in methods},
         all_datasets,
@@ -98,7 +99,8 @@ if __name__ == "__main__":
     plot_grid_of_diagonals(
         {k: methods_dict[k] for k in methods},
         selected_datasets,
-        ["LR"],
+        # ["LR"],
+        classifiers,
         [color_palette[m] for m in methods],
         filename="ul_5x1",
         n_cols=5,
