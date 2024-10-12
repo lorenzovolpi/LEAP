@@ -15,25 +15,44 @@ from leap.experiments.generators import (
 from leap.experiments.report import Report
 from leap.table import Format, Table
 
-PROBLEM = "multiclass"
+PROBLEM = "binary"
 ERROR = leap.error.ae
+
+METHODS = ["Naive", "ATC", "DoC", "LEAP", "LEAP-plus"]
+CLASSIFIERS = ["LR", "KNN", "SVM", "MLP"]
 
 if PROBLEM == "binary":
     gen_datasets = gen_bin_datasets
+elif PROBLEM == "binary_ext":
+    gen_datasets = gen_bin_datasets
+    METHODS = ["Naive", "ATC", "DoC", "LEAPcc", "LEAP", "LEAP-plus", "LEAP-oracle"]
+    CLASSIFIERS = ["LR", "MLP"]
+elif PROBLEM == "binary_oracle":
+    gen_datasets = gen_bin_datasets
+    METHODS += ["LEAPcc", "NaiveRescaling", "NaiveRescaling-plus", "LEAP-oracle", "NaiveRescaling-oracle"]
 elif PROBLEM == "multiclass":
     gen_datasets = gen_multi_datasets
 
 BENCHMARKS = [name for name, _ in gen_datasets(only_names=True)]
-METHODS = ["Naive", "ATC", "DoC", "LEAP", "LEAP-plus"]
-CLASSIFIERS = ["LR", "KNN", "SVM", "MLP"]
 ACC_NAMES = [acc_name for acc_name, _ in gen_acc_measure()]
+
+
+def get_results_problem(problem):
+    problems = {
+        "binary_oracle": "binary",
+        "binary_ext": "binary",
+        "binary_paper": "binary",
+    }
+    return problems.get(problem, problem)
 
 
 def rename_method(m):
     methods_dict = {
         "Naive": "\\naive",
-        "LEAP": "\\phd",
+        "LEAP": "\\phdacc",
         "LEAP-plus": "\\phdplus",
+        "LEAP-oracle": "\\phdoracle",
+        "LEAPcc": "\\phdcc",
     }
     return methods_dict.get(m, m)
 
@@ -45,7 +64,7 @@ def rename_cls(cls):
 
 def table_from_df(df: pd.DataFrame, name, benchmarks, methods) -> Table:
     tbl = Table(name=name, benchmarks=benchmarks, methods=methods)
-    tbl.format = Format(mean_prec=3, show_std=False, remove_zero=True, with_rank_mean=False)
+    tbl.format = Format(mean_prec=3, show_std=False, remove_zero=True, with_rank_mean=False, with_mean=True)
     tbl.format.mean_macro = False
     for dataset, method in IT.product(benchmarks, methods):
         values = df.loc[(df["dataset"] == dataset) & (df["method"] == method), ["acc_err"]].to_numpy()
@@ -120,7 +139,7 @@ def gen_n2e_tables():
     tables = []
     for acc_name in ACC_NAMES:
         for cls_name in CLASSIFIERS:
-            rep = Report.load_results(PROBLEM, cls_name, acc_name, BENCHMARKS, METHODS)
+            rep = Report.load_results(get_results_problem(PROBLEM), cls_name, acc_name, BENCHMARKS, METHODS)
             df = rep.table_data(mean=False, error=ERROR)
 
             cls_name = rename_cls(cls_name)

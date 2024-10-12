@@ -94,15 +94,11 @@ class CAPContingencyTableQ(CAPContingencyTable, BaseEstimator):
 
     def quant_classifier_fit_predict(self, data: LabelledCollection):
         if self.reuse_h:
-            return self.q.classifier_fit_predict(
-                data, fit_classifier=False, predict_on=data
-            )
+            return self.q.classifier_fit_predict(data, fit_classifier=False, predict_on=data)
         else:
             return self.q.classifier_fit_predict(data)
 
-    def quant_aggregation_fit(
-        self, classif_predictions: LabelledCollection, data: LabelledCollection
-    ):
+    def quant_aggregation_fit(self, classif_predictions: LabelledCollection, data: LabelledCollection):
         self.q.aggregation_fit(classif_predictions, data)
 
     def fit(self, data: LabelledCollection):
@@ -111,6 +107,41 @@ class CAPContingencyTableQ(CAPContingencyTable, BaseEstimator):
         classif_predictions = self.quant_classifier_fit_predict(data)
         self.quant_aggregation_fit(classif_predictions, data)
         return self
+
+
+class NaiveRescalingCAP(CAPContingencyTableQ):
+    """ """
+
+    def __init__(
+        self,
+        h: BaseEstimator,
+        acc_fn: Callable,
+        q_class,
+        reuse_h=False,
+    ):
+        super().__init__(h, acc_fn, q_class, reuse_h)
+
+    def preprocess_data(self, data: LabelledCollection):
+        y_hat = self.h.predict(data.X)
+        y_true = data.y
+        self.cont_table = confusion_matrix(y_true=y_true, y_pred=y_hat, labels=data.classes_, normalize="all")
+        self.train_prev = data.prevalence()
+        return data
+
+    def predict_ct(self, test, oracle_prev=None):
+        """
+        :param test: test collection (ignored)
+        :param oracle_prev: np.ndarray with the class prevalence of the test set as estimated by
+            an oracle. This is meant to test the effect of the errors in CAP that are explained by
+            the errors in quantification performance
+        :return: a confusion matrix in the return format of `sklearn.metrics.confusion_matrix`
+        """
+        if oracle_prev is None:
+            prev_hat = self.q.quantify(test)
+        else:
+            prev_hat = oracle_prev
+        adjustment = prev_hat / self.train_prev
+        return self.cont_table * adjustment[:, np.newaxis]
 
 
 class NsquaredEquationsCAP(CAPContingencyTableQ):
@@ -166,9 +197,7 @@ class NsquaredEquationsCAP(CAPContingencyTableQ):
         # a = a ar + b ar + c ar
         # a - a ar - b ar - c ar = 0
         # a (1-ar) + b (-ar)  + c (-ar) = 0
-        class_cond_ratios_tr = self.cont_table / self.cont_table.sum(
-            axis=1, keepdims=True
-        )
+        class_cond_ratios_tr = self.cont_table / self.cont_table.sum(axis=1, keepdims=True)
         for i in range(1, n):
             for j in range(1, n):
                 ratio_ij = class_cond_ratios_tr[i, j]

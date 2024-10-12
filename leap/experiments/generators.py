@@ -4,7 +4,7 @@ import quapy as qp
 from quapy.data.base import LabelledCollection
 from quapy.data.datasets import UCI_BINARY_DATASETS, UCI_MULTICLASS_DATASETS
 from quapy.method._kdey import KDEyML
-from quapy.method.aggregative import ACC
+from quapy.method.aggregative import ACC, CC
 from sklearn.linear_model import LogisticRegression as LR
 from sklearn.neighbors import KNeighborsClassifier as KNN
 from sklearn.neural_network import MLPClassifier as MLP
@@ -12,10 +12,12 @@ from sklearn.svm import SVC
 
 from leap.dataset import DatasetProvider as DP
 from leap.error import vanilla_acc
+from leap.models.base import CAP
 from leap.models.cont_table import (
     LEAP,
     CAPContingencyTable,
     NaiveCAP,
+    NaiveRescalingCAP,
 )
 from leap.models.direct import ATC, CAPDirect, DoC
 from leap.utils.commons import get_results_path
@@ -56,34 +58,51 @@ def gen_product(gen1, gen2):
 
 
 ### baselines ###
-def gen_CAP_baselines(h, acc_fn, config, with_oracle=False) -> [str, CAPDirect]:
+def gen_CAP_baselines(h, acc_fn) -> [str, CAPDirect]:
     yield "ATC", ATC(h, acc_fn, scoring_fn="maxconf")
     yield "DoC", DoC(h, acc_fn, sample_size=qp.environ["SAMPLE_SIZE"])
 
 
-def gen_CAP_cont_table(h, acc_fn, config) -> [str, CAPContingencyTable]:
+def gen_CAP_cont_table(h, acc_fn) -> [str, CAPContingencyTable]:
     yield "Naive", NaiveCAP(h, acc_fn)
+    yield "LEAPcc", LEAP(h, acc_fn, CC(LR()), reuse_h=True)
     yield "LEAP", LEAP(h, acc_fn, ACC(LR()), reuse_h=True)
     yield "LEAP-plus", LEAP(h, acc_fn, KDEyML(LR()), reuse_h=True)
+    yield "NaiveRescaling", NaiveRescalingCAP(h, acc_fn, ACC(LR()), reuse_h=True)
+    yield "NaiveRescaling-plus", NaiveRescalingCAP(h, acc_fn, KDEyML(LR()), reuse_h=True)
 
 
-def gen_methods(h, V, config, with_oracle=False):
-    config = "multiclass" if config is None else config
+def gen_CAP_CT_with_oracle(h, acc_fn) -> [str, CAPContingencyTable]:
+    yield "LEAP-oracle", LEAP(h, acc_fn, ACC(LR()), reuse_h=True)
+    yield "NaiveRescaling-oracle", NaiveRescalingCAP(h, acc_fn, ACC(LR()), reuse_h=True)
 
+
+def gen_methods(h) -> [str, CAP, bool]:
+    """
+    A generator to create all methods for the current experiment
+
+    :param h: the classifier used to create the method instances
+    :return: tuples comprised of name of the method, instance of the method and flag indicating
+             weather the method expects an oracle
+    """
     _, acc_fn = next(gen_acc_measure())
 
-    for name, method in gen_CAP_baselines(h, acc_fn, config, with_oracle):
-        yield name, method, V
-    for name, method in gen_CAP_cont_table(h, acc_fn, config):
-        yield name, method, V
+    for name, method in gen_CAP_baselines(h, acc_fn):
+        yield name, method, False
+    for name, method in gen_CAP_cont_table(h, acc_fn):
+        yield name, method, False
+    for name, method in gen_CAP_CT_with_oracle(h, acc_fn):
+        yield name, method, True
 
 
-def get_method_names(config):
+def get_method_names():
     mock_h = LR()
     _, mock_acc_fn = next(gen_acc_measure())
-    return [m for m, _ in gen_CAP_baselines(mock_h, mock_acc_fn, config)] + [
-        m for m, _ in gen_CAP_cont_table(mock_h, mock_acc_fn, config)
-    ]
+    return (
+        [m for m, _ in gen_CAP_baselines(mock_h, mock_acc_fn)]
+        + [m for m, _ in gen_CAP_cont_table(mock_h, mock_acc_fn)]
+        + [m for m, _ in gen_CAP_CT_with_oracle(mock_h, mock_acc_fn)]
+    )
 
 
 def gen_acc_measure(multiclass=False):

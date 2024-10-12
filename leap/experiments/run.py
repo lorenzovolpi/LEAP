@@ -24,7 +24,7 @@ from leap.experiments.util import (
 )
 from leap.utils.commons import save_dataset_stats, true_acc
 
-PROBLEM = "multiclass"
+PROBLEM = "binary"
 ORACLE = False
 basedir = PROBLEM + ("-oracle" if ORACLE else "")
 
@@ -42,7 +42,7 @@ log = get_logger()
 
 
 def all_exist_pre_check(basedir, cls_name, dataset_name):
-    method_names = get_method_names(PROBLEM)
+    method_names = get_method_names()
     acc_names = [acc_name for acc_name, _ in gen_acc_measure()]
 
     all_exist = True
@@ -79,7 +79,7 @@ def experiments():
             true_accs[acc_name] = [true_acc(h, acc_fn, Ui) for Ui in test_prot()]
 
         L_prev = get_plain_prev(L.prevalence())
-        for method_name, method, V in gen_methods(h, V, PROBLEM, ORACLE):
+        for method_name, method, with_oracle in gen_methods(h):
             V_prev = get_plain_prev(V.prevalence())
 
             t_train = None
@@ -102,7 +102,7 @@ def experiments():
                     t_train = t_train if _t_train is None else _t_train
 
                     test_prevs = prevs_from_prot(test_prot)
-                    estim_accs, t_test_ave = get_predictions(method, test_prot, ORACLE)
+                    estim_accs, t_test_ave = get_predictions(method, test_prot, with_oracle)
                     report.add_result(test_prevs, true_accs[acc_name], estim_accs, t_train, t_test_ave)
                 except Exception as e:
                     print_exception(e)

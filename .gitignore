@@ -4,14 +4,15 @@
 # cache
 *__pycache__*
 
-# results
 dataset_stats
-results
+# results
+output/plots
 # plots
 tables
 
 # log files
 *.log
+*.out
 
 # html files
 *.html
