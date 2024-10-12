@@ -4,6 +4,7 @@
 # cache
 *__pycache__*
 
+output_old
 dataset_stats
 # results
 output/plots
