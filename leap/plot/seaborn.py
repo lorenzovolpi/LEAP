@@ -24,9 +24,8 @@ def _save_figure(plot: Axes, cls_name, plot_type, filename):
     plot.figure.clear()
 
 
-def _config_legend(plot: Axes):
-    plot.legend(title="")
-    sns.move_legend(plot, "lower center", bbox_to_anchor=(1, 0.5), ncol=1)
+def _config_legend(plot: Axes, bbox_to_anchor):
+    sns.move_legend(plot, "lower center", bbox_to_anchor=bbox_to_anchor, ncol=1)
 
 
 def plot_diagonal(
@@ -37,10 +36,43 @@ def plot_diagonal(
     *,
     basedir=None,
     filename="diagonal",
+    color_palette=None,
+    legend_bbox_to_anchor=(1, 0.5),
+    legend_label_length=8,
+    x_label="true accs.",
+    y_label="estim. accs.",
 ):
-    plot = sns.scatterplot(data=df, x="true_accs", y="estim_accs", hue="method", alpha=0.5)
+    if color_palette is not None:
+        palette = sns.color_palette(color_palette)
+    else:
+        palette = sns.color_palette()
 
-    _config_legend(plot)
+    plot = sns.scatterplot(
+        data=df,
+        x="true_accs",
+        y="estim_accs",
+        hue="method",
+        alpha=0.5,
+        palette=palette,
+    )
+    plot.set_xlim((0, 1))
+    plot.set_ylim((0, 1))
+    plot.axline((0, 0), slope=1, color="black", linestyle="--", linewidth=1)
+    plot.set_aspect(1.0)
+
+    handles, labels = plot.get_legend_handles_labels()
+    for lh in handles:
+        lh.set_alpha(1)
+    t_labels = []
+    for lbl in labels:
+        if len(lbl) < legend_label_length:
+            t_labels.append(lbl + " " * (legend_label_length - len(lbl)))
+    plot.legend(handles, t_labels, title="")
+    _config_legend(plot, legend_bbox_to_anchor)
+
+    plot.set_xlabel(x_label)
+    plot.set_ylabel(y_label)
+
     return _save_figure(plot, cls_name, dataset_name, filename)
 
 
