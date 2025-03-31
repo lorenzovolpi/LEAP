@@ -23,17 +23,28 @@ class Format:
     style: str = "minimal"
     lower_is_better: bool = True
     stat_test: str = "wilcoxon"
+    show_stat: bool = True
+    simple_stat: bool = False
     color_mode: str = "local"
     with_mean: bool = True
     mean_macro: bool = True
     with_rank_mean: bool = True
     only_full_mean: bool = True
     best_color: str = "green"
+    mid_color: str = "cyan"
     worst_color: str = "red"
+    baseline_color: str = "yellow"
 
 
 class Cell:
-    def __init__(self, format: Format, local_group: "CellGroup", global_group: "CellGroup"):
+    def __init__(
+        self,
+        format: Format,
+        local_group: "CellGroup",
+        global_group: "CellGroup",
+        baseline_group: "CellGroup",
+        is_baseline: bool = False,
+    ):
         self.values = []
         self.format = format
         self.touch()
@@ -41,6 +52,9 @@ class Cell:
         self.local_group.register_cell(self)
         self.global_group = global_group
         self.global_group.register_cell(self)
+        self.baseline_group = baseline_group
+        if is_baseline:
+            self.baseline_group.register_cell(self)
 
     def __len__(self):
         return len(self.values)
@@ -90,7 +104,7 @@ class Cell:
         if self.isEmpty():
             return ""
 
-        whitespace = "$^{\phantom{\dag}}$"
+        whitespace = "$^{\phantom{\dag}}$" if self.format.show_stat else ""
 
         # mean
         # ---------------------------------------------------
@@ -101,7 +115,10 @@ class Cell:
         # std ?
         # ---------------------------------------------------
         if self.format.show_std:
-            std = f"$\pm${whitespace}{self.std():.{self.format.std_prec}f}"
+            _std_val = f"{self.std():.{self.format.std_prec}f}"
+            if self.format.remove_zero:
+                _std_val = _std_val.replace("0.", ".")
+            std = f"$\pm${whitespace}{_std_val}"
         else:
             std = ""
 
@@ -112,19 +129,30 @@ class Cell:
         else:
             comp_symbol = whitespace
             pval = self.local_group.compare(self)
-            if pval is not None:
+            if pval is not None and self.format.simple_stat:
                 if 0.001 > pval:
                     comp_symbol = whitespace
-                elif 0.01 > pval >= 0.001:
+                else:
                     comp_symbol = "$^{\dag}$"
-                elif pval >= 0.01:
+            elif pval is not None and not self.format.simple_stat:
+                if 0.001 > pval:
+                    comp_symbol = whitespace
+                elif 0.05 > pval >= 0.001:
+                    comp_symbol = "$^{\dag}$"
+                elif pval >= 0.05:
                     comp_symbol = "$^{\ddag}$"
             str_cell = f"{mean}{comp_symbol}{std}"
+
+        str_cell = str_cell.replace("$$", "")  # remove useless "$$"
 
         # color ?
         # ---------------------------------------------------
         if self.format.color:
-            group = self.local_group if self.format.color_mode == "local" else self.global_group
+            group = {
+                "local": self.local_group,
+                "global": self.global_group,
+                "baselines": self.baseline_group,
+            }[self.format.color_mode]
             # str_cell += ' ' + group.color(self)
             str_cell += group.color(self)
 
@@ -141,6 +169,7 @@ class CellGroup:
         assert format.color_mode in [
             "local",
             "global",
+            "baselines",
         ], f"unknown {format.color_mode=}, valid ones are local and global"
         # if (format.color_global_min is not None or format.color_global_max is not None) and format.color_mode=='local':
         #     print('warning: color_global_min and color_global_max are only considered when color_mode==local')
@@ -198,40 +227,80 @@ class CellGroup:
             return None
 
     def color(self, cell: Cell):
-        cell_mean = cell.mean()
+        if self.format.color_mode == "baselines":
+            assert not self.isEmpty(), "Invalid value for format.color_mode: no baselines found"
+            best_bline = self.best()
 
-        # if self.format.color_mode == 'local':
-        best = self.best()
-        worst = self.worst()
-        best_mean = best.mean()
-        worst_mean = worst.mean()
+            if cell in self.non_empty_cells():
+                if cell.mean() == best_bline.mean():
+                    color = self.format.baseline_color
+                    tone = self.format.maxtone
+                    return f"\cellcolor{{{color}!{int(tone)}}}"
+                else:
+                    return ""
 
-        if best is None or worst is None or best_mean == worst_mean or cell.isEmpty():
-            return ""
+            if self.format.lower_is_better:
+                cell_is_better = cell.mean() <= best_bline.mean()
+            else:
+                cell_is_better = cell.mean() >= best_bline.mean()
 
-        # normalize val in [0,1]
-        maxval = max(best_mean, worst_mean)
-        minval = min(best_mean, worst_mean)
-        # else:
-        #     maxval = self.format.color_global_max
-        #     minval = self.format.color_global_min
+            p_val = self.compare(cell)
 
-        normval = (cell_mean - minval) / (maxval - minval)
+            # color = self.format.best_color if cell_is_better else self.format.worst_color
+            # if p_val < 0.001:
+            #     tone = self.format.maxtone
+            # elif p_val >= 0.001 and p_val < 0.05:
+            #     tone = self.format.maxtone * 0.7
+            # else:
+            #     tone = self.format.maxtone * 0.5
+            # return f"\cellcolor{{{color}!{int(tone)}}}"
 
-        if self.format.lower_is_better:
-            normval = 1 - normval
+            if cell_is_better:
+                tone = self.format.maxtone
+                if p_val < 0.001:
+                    color = self.format.best_color
+                else:
+                    # tone = self.format.maxtone * 0.6
+                    color = self.format.mid_color
+                return f"\cellcolor{{{color}!{int(tone)}}}"
+            else:
+                return ""
 
-        normval = np.clip(normval, 0, 1)
-
-        normval = normval * 2 - 1  # rescale to [-1,1]
-        if normval < 0:
-            color = cell.format.worst_color
-            tone = cell.format.maxtone * (-normval)
         else:
-            color = cell.format.best_color
-            tone = cell.format.maxtone * normval
+            cell_mean = cell.mean()
 
-        return f"\cellcolor{{{color}!{int(tone)}}}"
+            # if self.format.color_mode == 'local':
+            best = self.best()
+            worst = self.worst()
+            best_mean = best.mean()
+            worst_mean = worst.mean()
+
+            if best is None or worst is None or best_mean == worst_mean or cell.isEmpty():
+                return ""
+
+            # normalize val in [0,1]
+            maxval = max(best_mean, worst_mean)
+            minval = min(best_mean, worst_mean)
+            # else:
+            #     maxval = self.format.color_global_max
+            #     minval = self.format.color_global_min
+
+            normval = (cell_mean - minval) / (maxval - minval)
+
+            if self.format.lower_is_better:
+                normval = 1 - normval
+
+            normval = np.clip(normval, 0, 1)
+
+            normval = normval * 2 - 1  # rescale to [-1,1]
+            if normval < 0:
+                color = cell.format.worst_color
+                tone = cell.format.maxtone * (-normval)
+            else:
+                color = cell.format.best_color
+                tone = cell.format.maxtone * normval
+
+            return f"\cellcolor{{{color}!{int(tone)}}}"
 
     def rank(self, cell: Cell) -> int:
         if cell.isEmpty():
@@ -251,10 +320,12 @@ class Table:
         name="table",
         benchmarks=None,
         methods=None,
+        baselines=None,
     ):
         self.name = name
         self.benchmarks = [] if benchmarks is None else benchmarks
         self.methods = [] if methods is None else methods
+        self.baselines = [] if baselines is None else baselines
         self.format = Format()
 
         # if self.format.color_mode == 'global':
@@ -265,6 +336,7 @@ class Table:
         #     self.format.color_global_max = None
 
         self.T = {}
+        self.bline_groups = {}
         self.groups = {}
         self.global_group = self._new_group()
         self.left_frame = None
@@ -296,13 +368,21 @@ class Table:
             self.benchmarks.append(benchmark)
         if benchmark not in self.groups:
             self.groups[benchmark] = self._new_group()
+        if benchmark not in self.bline_groups:
+            self.bline_groups[benchmark] = self._new_group()
         if method not in self.methods:
             self.methods.append(method)
         b_idx = self.benchmarks.index(benchmark)
         m_idx = self.methods.index(method)
         idx = tuple((b_idx, m_idx))
         if idx not in self.T:
-            self.T[idx] = Cell(self.format, local_group=self.groups[benchmark], global_group=self.global_group)
+            self.T[idx] = Cell(
+                self.format,
+                local_group=self.groups[benchmark],
+                global_group=self.global_group,
+                baseline_group=self.bline_groups[benchmark],
+                is_baseline=method in self.baselines,
+            )
         cell = self.T[idx]
         return cell
 
@@ -322,10 +402,18 @@ class Table:
 
     def get_method_means(self, method_order):
         mean_group = self._new_group()
+        mean_bline_group = self._new_group()
         mean_global_group = self._new_group()
         cells = []
         for method in method_order:
-            method_mean = Cell(self.format, local_group=mean_group, global_group=mean_global_group)
+            is_baseline = method in self.baselines
+            method_mean = Cell(
+                self.format,
+                local_group=mean_group,
+                global_group=mean_global_group,
+                baseline_group=mean_bline_group,
+                is_baseline=is_baseline,
+            )
             leave_empty = False
             for bench in self.get_benchmarks():
                 if self.format.mean_macro:
@@ -346,7 +434,15 @@ class Table:
                     break  # with only one missing value, the average should not be computed
 
             if leave_empty:
-                cells.append(Cell(self.format, local_group=mean_group, global_group=mean_global_group))
+                cells.append(
+                    Cell(
+                        self.format,
+                        local_group=mean_group,
+                        global_group=mean_global_group,
+                        baseline_group=mean_bline_group,
+                        is_baseline=is_baseline,
+                    )
+                )
             else:
                 cells.append(method_mean)
 
@@ -354,13 +450,21 @@ class Table:
 
     def get_method_rank_means(self, method_order):
         rank_mean_group = self._new_group()
+        rank_mean_bline_group = self._new_group()
         rank_global_group = self._new_group()
         cells = []
         for method in method_order:
+            is_baseline = method in self.baselines
             rankmean_format = replace(self.format)
             rankmean_format.mean_prec = self.format.meanrank_prec
             rankmean_format.std_prec = self.format.meanrank_std_prec
-            method_rank_mean = Cell(format=rankmean_format, local_group=rank_mean_group, global_group=rank_global_group)
+            method_rank_mean = Cell(
+                format=rankmean_format,
+                local_group=rank_mean_group,
+                global_group=rank_global_group,
+                baseline_group=rank_mean_bline_group,
+                is_baseline=is_baseline,
+            )
             leave_empty = False
             for bench in self.get_benchmarks():
                 rank = self.get(benchmark=bench, method=method).rank()
@@ -371,7 +475,15 @@ class Table:
                 if leave_empty:
                     break
             if leave_empty:
-                cells.append(Cell(self.format, local_group=rank_mean_group, global_group=rank_global_group))
+                cells.append(
+                    Cell(
+                        self.format,
+                        local_group=rank_mean_group,
+                        global_group=rank_global_group,
+                        baseline_group=rank_mean_bline_group,
+                        is_baseline=is_baseline,
+                    )
+                )
             else:
                 cells.append(method_rank_mean)
         return cells
@@ -594,7 +706,7 @@ class Table:
         lines.append("\\usepackage{amsfonts}")
         lines.append("\\usepackage{amssymb}")
         lines.append("\\usepackage{graphicx}")
-        lines.append("\\usepackage{xcolor}")
+        lines.append("\\usepackage[dvipsnames]{xcolor}")
         lines.append("\\usepackage{colortbl}")
         lines.append("\\usepackage{booktabs}")
         if landscape:

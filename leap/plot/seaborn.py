@@ -1,90 +1,33 @@
 import os
-from pathlib import Path
 
 import pandas as pd
 import seaborn as sns
 from matplotlib.axes import Axes
 
-from leap.utils.commons import get_plots_path
-
 sns.set_theme(style="whitegrid")
+sns.set_palette("colorblind")
 
 DPI = 300
 
 
-def _save_figure(plot: Axes, cls_name, plot_type, filename):
+def _save_figure(plot: Axes, basedir, filename):
     exts = [
-        "svg",
+        # "svg",
+        "pdf",
         "png",
     ]
-    files = [get_plots_path(cls_name, plot_type, filename, ext=e) for e in exts]
+    files = [os.path.join(basedir, f"{filename}.{ext}") for ext in exts]
     for f in files:
-        os.makedirs(Path(f).parent, exist_ok=True)
         plot.figure.savefig(f, bbox_inches="tight", dpi=DPI)
     plot.figure.clear()
 
 
-def _config_legend(plot: Axes, bbox_to_anchor):
-    sns.move_legend(plot, "lower center", bbox_to_anchor=bbox_to_anchor, ncol=1)
-
-
-def plot_diagonal(
-    df: pd.DataFrame,
-    cls_name,
-    acc_name,
-    dataset_name,
-    *,
-    basedir=None,
-    filename="diagonal",
-    color_palette=None,
-    legend_bbox_to_anchor=(1, 0.5),
-    legend_label_length=8,
-    x_label="true accs.",
-    y_label="estim. accs.",
-):
-    if color_palette is not None:
-        palette = sns.color_palette(color_palette)
-    else:
-        palette = sns.color_palette()
-
-    plot = sns.scatterplot(
-        data=df,
-        x="true_accs",
-        y="estim_accs",
-        hue="method",
-        alpha=0.5,
-        palette=palette,
-    )
-    plot.set_xlim((0, 1))
-    plot.set_ylim((0, 1))
-    plot.axline((0, 0), slope=1, color="black", linestyle="--", linewidth=1)
-    plot.set_aspect(1.0)
-
-    handles, labels = plot.get_legend_handles_labels()
-    for lh in handles:
-        lh.set_alpha(1)
-    t_labels = []
-    for lbl in labels:
-        if len(lbl) < legend_label_length:
-            t_labels.append(lbl + " " * (legend_label_length - len(lbl)))
-    plot.legend(handles, t_labels, title="")
-    _config_legend(plot, legend_bbox_to_anchor)
-
-    plot.set_xlabel(x_label)
-    plot.set_ylabel(y_label)
-
-    return _save_figure(plot, cls_name, dataset_name, filename)
-
-
 def plot_diagonal_grid(
     df: pd.DataFrame,
-    cls_name,
-    acc_name,
-    dataset_names,
+    method_names,
     *,
-    basedir=None,
-    file_name="diagonal",
-    color_palette=None,
+    basedir="output",
+    filename="diagonal_grid",
     n_cols=1,
     x_label="true accs.",
     y_label="estim. accs.",
@@ -95,18 +38,15 @@ def plot_diagonal_grid(
     hspace=0.1,
     wspace=0.1,
     legend_bbox_to_anchor=(1, 0.5),
+    palette="tab10",
     **kwargs,
 ):
-    if color_palette is not None:
-        palette = sns.color_palette(color_palette)
-    else:
-        palette = sns.color_palette()
-
     plot = sns.FacetGrid(
         df,
         col="dataset",
         col_wrap=n_cols,
         hue="method",
+        hue_order=method_names,
         xlim=(0, 1),
         ylim=(0, 1),
         aspect=aspect,
@@ -140,4 +80,4 @@ def plot_diagonal_grid(
     plot.set_xlabels(x_label)
     plot.set_ylabels(y_label)
 
-    return _save_figure(plot, cls_name, "grid", file_name)
+    return _save_figure(plot=plot, basedir=basedir, filename=filename)
