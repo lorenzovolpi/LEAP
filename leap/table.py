@@ -577,12 +577,12 @@ class Table:
         lines.append(begin_tabular)
         lines.append(toprule)
 
-        l = corner
-        l += " & ".join([col_replace.get(col, col) for col in col_order])
+        ln = corner
+        ln += " & ".join([col_replace.get(col, col) for col in col_order])
         if add_mean_col:
-            l += " & " + average_label
-        l += midrule
-        lines.append(l)
+            ln += " & " + average_label
+        ln += midrule
+        lines.append(ln)
 
         # printed_table = [[self.get(benchmark=col if transpose else row, method=row if transpose else col).print() for col in col_order] for row in row_order]
         # printed_lengths = np.zeros(len(row_order), len(col_order))
@@ -593,37 +593,37 @@ class Table:
 
         for i, row in enumerate(row_order):
             rowname = row_replace.get(row, row)
-            l = rowname + " & "
-            l += " & ".join(
+            ln = rowname + " & "
+            ln += " & ".join(
                 [
                     self.get(benchmark=col if transpose else row, method=row if transpose else col).print()
                     for col in col_order
                 ]
             )
             if add_mean_col:
-                l += " & " + mean_cells[i].print()
+                ln += " & " + mean_cells[i].print()
 
             if i < len(row_order) - 1:
-                l += endl
+                ln += endl
             else:  # last line
                 if add_mean_row:  # midrule, since there will be an additional row
-                    l += midrule
+                    ln += midrule
                 else:
-                    l += bottomrule  # bottomrule, this is indeed the last row
-            lines.append(l)
+                    ln += bottomrule  # bottomrule, this is indeed the last row
+            lines.append(ln)
 
         if add_mean_row:
-            l = average_label + " & "
-            l += " & ".join([mean_cell.print() for mean_cell in mean_cells])
+            ln = average_label + " & "
+            ln += " & ".join([mean_cell.print() for mean_cell in mean_cells])
 
             if self.format.with_rank_mean:
-                l += "\\\\"
-                lines.append(l)
-                l = rank_average_label + " & "
-                l += " & ".join([mean_cell.print() for mean_cell in rankmean_cells])
+                ln += "\\\\"
+                lines.append(ln)
+                ln = rank_average_label + " & "
+                ln += " & ".join([mean_cell.print() for mean_cell in rankmean_cells])
 
-            l += bottomrule
-            lines.append(l)
+            ln += bottomrule
+            lines.append(ln)
 
         lines.append("\\end{tabular}")
 
