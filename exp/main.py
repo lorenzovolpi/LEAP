@@ -4,10 +4,10 @@ from traceback import print_exception
 
 import numpy as np
 import pandas as pd
-import quacc as qc
 import quapy as qp
 from sklearn.base import clone as skl_clone
 
+import leap
 from exp.config import (
     PROBLEM,
     PROJECT,
@@ -36,7 +36,7 @@ qp.environ["SAMPLE_SIZE"] = 100
 
 
 def local_path(dataset_name, cls_name, method_name, acc_name):
-    parent_dir = os.path.join(root_dir, PROBLEM, cls_name, acc_name, dataset_name)
+    parent_dir = os.path.join(root_dir, "data", PROBLEM, cls_name, acc_name, dataset_name)
     os.makedirs(parent_dir, exist_ok=True)
     return os.path.join(parent_dir, f"{method_name}.json")
 
@@ -130,7 +130,7 @@ def exp_protocol(args):
             results.append((cls_name, dataset_name, acc_name, method_name, None, None, None, EXP.ERROR(e)))
             continue
 
-        ae = qc.error.ae(np.array(true_accs[acc_name]), np.array(estim_accs)).tolist()
+        ae = leap.error.ae(np.array(true_accs[acc_name]), np.array(estim_accs)).tolist()
 
         df_len = len(estim_accs)
         method_df = gen_method_df(
@@ -189,7 +189,7 @@ def experiments():
     results_gen = parallel(
         func=exp_protocol,
         args_list=exp_prot_args_list,
-        n_jobs=qc.env["N_JOBS"],
+        n_jobs=leap.env["N_JOBS"],
         return_as="generator_unordered",
     )
 

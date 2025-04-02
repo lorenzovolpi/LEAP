@@ -2,11 +2,11 @@ import itertools as IT
 import math
 import os
 
+import matplotlib.pyplot as plt
 import matplotlib.ticker as tkr
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from matplotlib.pyplot import close
 
 from exp.config import PROBLEM, get_acc_names, get_classifier_names, get_dataset_names, root_dir
 from exp.util import load_results, rename_datasets, rename_methods
@@ -14,10 +14,10 @@ from exp.util import load_results, rename_datasets, rename_methods
 N_COLS = 4
 
 method_map = {
-    "LEAP(ACC-MLP)": "LEAP$_{\\mathrm{ACC}}$",
-    "LEAP(KDEy-MLP)": "LEAP$_{\\mathrm{KDEy}}$",
-    "PHD(KDEy-MLP)": "LEAP(PPS)$_{\\mathrm{KDEy}}$",
-    "OCE(KDEy-MLP)-SLSQP": "OLEAP$_{\\mathrm{KDEy}}$",
+    "LEAP(ACC)": "LEAP$_{\\mathrm{ACC}}$",
+    "LEAP(KDEy)": "LEAP$_{\\mathrm{KDEy}}$",
+    "S-LEAP(KDEy)": "S-LEAP$_{\\mathrm{KDEy}}$",
+    "O-LEAP(KDEy)": "O-LEAP$_{\\mathrm{KDEy}}$",
 }
 
 dataset_map = {
@@ -34,7 +34,7 @@ def _savefig(plot, path):
     for p in paths:
         plot.figure.savefig(p)
     plot.figure.clear()
-    close(plot.figure)
+    plt.close(plot.figure)
 
 
 def get_cts(df, method, cts_name):
@@ -50,59 +50,13 @@ def draw_heatmap(data, plot_names, **kwargs):
     plot.set_title(plot_name)
 
 
-def ctdfiff_couples():
-    res = load_results()
-
+def ctdfiff():
     classifiers = get_classifier_names()
     accs = get_acc_names()
     datasets = get_dataset_names()
-    methods = ["LEAP(KDEy)", "PHD(KDEy)", "OCE(KDEy)-SLSQP"]
-    method_combos = list(IT.combinations(methods, 2))
+    methods = ["Naive", "LEAP(KDEy)", "S-LEAP(KDEy)", "O-LEAP(KDEy)"]
 
-    parent_dir = os.path.join(root_dir, "plots", PROBLEM)
-    os.makedirs(parent_dir, exist_ok=True)
-
-    for cls_name, acc, dataset in IT.product(classifiers, accs, datasets):
-        print(cls_name, acc, dataset)
-        df = res.loc[(res["classifier"] == cls_name) & (res["acc_name"] == acc) & (res["dataset"] == dataset), :]
-        for m1, m2 in method_combos:
-            true_cts = get_cts(df, m1, "true_cts")
-            assert np.all(true_cts == get_cts(df, m2, "true_cts"))
-            estim_cts1 = get_cts(df, m1, "estim_cts")
-            estim_cts2 = get_cts(df, m2, "estim_cts")
-            ae1 = np.abs(estim_cts1 - true_cts).mean(axis=0)
-            ae2 = np.abs(estim_cts2 - true_cts).mean(axis=0)
-            comp = np.abs(estim_cts1 - estim_cts2).mean(axis=0)
-
-            _diff = np.vstack([comp, ae1, ae2])
-            hm = pd.DataFrame(_diff)
-            hm["col"] = np.repeat(np.arange(3), _diff.shape[1])
-            hm["row"] = 0
-            plot = sns.FacetGrid(hm, col="col", row="row")
-            plot.map_dataframe(
-                draw_heatmap,
-                plot_names=[f"{m1} - {m2}", f"{m1} ae", f"{m2} ae"],
-                cbars=[False, False, True],
-                vmin=np.min(_diff),
-                vmax=np.max(_diff),
-                cmap="rocket_r",
-                annot=_diff.shape[1] <= 4,
-            )
-
-            path = os.path.join(parent_dir, f"[{cls_name} - {dataset}]{m1}_vs_{m2}")
-            _savefig(plot, path)
-
-
-def ctdfiff_true_acc():
-    res = load_results()
-
-    # classifiers = get_classifier_names()
-    classifiers = ["LR", "MLP"]
-    accs = get_acc_names()
-    # datasets = get_dataset_names()
-    datasets = ["chess", "hand_digits", "digits", "abalone"]
-    methods = ["Naive", "LEAP(KDEy-MLP)", "PHD(KDEy-MLP)", "OCE(KDEy-MLP)-SLSQP"]
-    # methods = ["LEAP(ACC)", "LEAP(KDEy)", "PHD(KDEy)", "OCE(KDEy)-SLSQP"]
+    res = load_results(filter_methods=methods)
 
     parent_dir = os.path.join(root_dir, "ctdiffs")
     os.makedirs(parent_dir, exist_ok=True)
@@ -129,7 +83,6 @@ def ctdfiff_true_acc():
 
             mdf = pd.DataFrame(sqae)
             mdf["col"] = cnt % N_COLS
-            # mdf["row"] = cnt // N_COLS
             mdf["row"] = 0
             mdfs.append(mdf)
             plot_names.append(m)
@@ -140,7 +93,6 @@ def ctdfiff_true_acc():
             annot = sqae.shape[1] <= 4
             cnt += 1
 
-        # hmdf = pd.concat([true_df] + mdfs, axis=0)
         hmdf = pd.concat(mdfs, axis=0)
         plot = sns.FacetGrid(hmdf, col="col", row="row")
         cbar_ax = plot.fig.add_axes([0.92, 0.15, 0.02, 0.7])
@@ -164,4 +116,4 @@ def ctdfiff_true_acc():
 
 
 if __name__ == "__main__":
-    ctdfiff_true_acc()
+    ctdfiff()

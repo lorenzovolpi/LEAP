@@ -5,16 +5,16 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.ticker import LogLocator, MultipleLocator
 
-from exp.config import PROBLEM, get_acc_names, get_classifier_names, get_dataset_names, root_dir
-from exp.util import load_results, rename_methods
+from exp.critdd import get_acc_names
+from exp.leap.config import PROBLEM, get_classifier_names, get_dataset_names, root_dir
+from exp.leap.util import load_results, rename_methods
 
 method_map = {
     "Naive": 'Na\\"ive',
     "ATC-MC": "ATC",
-    "LEAP(ACC-MLP)": "LEAP$_{\\mathrm{ACC}}$",
-    "LEAP(KDEy-MLP)": "LEAP$_{\\mathrm{KDEy}}$",
-    "PHD(KDEy-MLP)": "LEAP(PPS)$_{\\mathrm{KDEy}}$",
-    "OCE(KDEy-MLP)-SLSQP": "OLEAP$_{\\mathrm{KDEy}}$",
+    "LEAP(KDEy)": "LEAP$_{\\mathrm{KDEy}}$",
+    "S-LEAP(KDEy)": "S-LEAP$_{\\mathrm{KDEy}}$",
+    "O-LEAP(KDEy)": "O-LEAP$_{\\mathrm{KDEy}}$",
 }
 
 
@@ -60,13 +60,12 @@ def plot(df, methods, parent_dir):
 
 
 def times():
-    res = load_results()
-
     classifiers = get_classifier_names()
     accs = get_acc_names()
     datasets = get_dataset_names()
-    # methods = ["LEAP(KDEy)", "PHD(KDEy)"]
-    methods = ["ATC-MC", "DoC", "LEAP(KDEy-MLP)", "PHD(KDEy-MLP)", "OCE(KDEy-MLP)-SLSQP"]
+    methods = ["ATC-MC", "DoC", "LEAP(KDEy)", "S-LEAP(KDEy)", "O-LEAP(KDEy)"]
+
+    res = load_results(filter_methods=methods)
 
     parent_dir = os.path.join(root_dir, "times")
     os.makedirs(parent_dir, exist_ok=True)
@@ -82,7 +81,6 @@ def times():
         df["n_classes"] = df["train_prev"].map(_get_n_classes)
         df, _methods = rename_methods(method_map, df, methods)
 
-        # pivot(df, parent_dir)
         plot(df, _methods, parent_dir)
 
 

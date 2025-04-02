@@ -2,26 +2,25 @@ import itertools as IT
 import os
 
 import pandas as pd
+from quacc.table import Format, Table
 
-from exp.config import (
+from exp.leap.config import (
     PROBLEM,
     get_acc_names,
     get_baseline_names,
     get_classifier_names,
     get_dataset_names,
-    get_method_names,
     root_dir,
 )
-from exp.util import load_results, rename_datasets, rename_methods
-from leap.table import Format, Table
+from exp.leap.util import load_results, rename_datasets, rename_methods
 
 method_map = {
     "Naive": 'Na\\"ive',
     "ATC-MC": "ATC",
-    "LEAP(ACC-MLP)": "LEAP$_{\\mathrm{ACC}}$",
-    "LEAP(KDEy-MLP)": "LEAP$_{\\mathrm{KDEy}}$",
-    "PHD(KDEy-MLP)": "LEAP(PPS)$_{\\mathrm{KDEy}}$",
-    "OCE(KDEy-MLP)-SLSQP": "OLEAP$_{\\mathrm{KDEy}}$",
+    "LEAP(ACC)": "\\leapacc",
+    "LEAP(KDEy)": "\\leapplus",
+    "S-LEAP(KDEy)": "\\leapppskde",
+    "O-LEAP(KDEy)-SLSQP": "\\oleapkde",
 }
 
 dataset_map = {
@@ -33,7 +32,13 @@ dataset_map = {
 
 
 def tables():
-    res = load_results()
+    classifiers = get_classifier_names()
+    datasets = get_dataset_names()
+    baselines = get_baseline_names()
+    methods = baselines + ["LEAP(ACC)", "LEAP(KDEy)", "S-LEAP(KDEy)", "O-LEAP(KDEy)"]
+    accs = get_acc_names()
+
+    res = load_results(filter_methods=methods)
 
     def gen_table(df: pd.DataFrame, name, datasets, methods, baselines):
         tbl = Table(name=name, benchmarks=datasets, methods=methods, baselines=baselines)
@@ -43,24 +48,17 @@ def tables():
             remove_zero=True,
             with_rank_mean=False,
             with_mean=True,
+            mean_macro=False,
             color=True,
-            color_mode="baselines",
+            color_mode="local",
             simple_stat=True,
-            best_color="OliveGreen",
-            mid_color="SeaGreen",
+            best_color="green",
         )
-        tbl.format.mean_macro = True
         for dataset, method in IT.product(datasets, methods):
             values = df.loc[(df["dataset"] == dataset) & (df["method"] == method), "acc_err"].to_numpy()
             for v in values:
                 tbl.add(dataset, method, v)
         return tbl
-
-    classifiers = get_classifier_names()
-    datasets = get_dataset_names()
-    methods = get_method_names(with_oracle=False)
-    baselines = get_baseline_names()
-    accs = get_acc_names()
 
     tbls = []
     for classifier, acc in IT.product(classifiers, accs):
@@ -71,22 +69,14 @@ def tables():
         tbls.append(gen_table(_df, name, _datasets, _methods, _baselines))
 
     pdf_path = os.path.join(root_dir, "tables", f"{PROBLEM}.pdf")
-    Table.LatexPDF(pdf_path, tables=tbls, landscape=False)
-
-
-def leap_true_solve():
-    res = load_results()
-    methods = ["LEAP(KDEy)", "LEAP(KDEy-a)", "LEAP(MDy)"]
-    md_path = os.path.join(root_dir, "tables", f"{PROBLEM}_true_solve.md")
-
-    pd.pivot_table(
-        res.loc[res["method"].isin(methods)],
-        columns=["classifier", "method"],
-        index=["dataset"],
-        values="true_solve",
-    ).to_markdown(md_path)
+    new_commands = [
+        "\\newcommand{\leapacc}{LEAP$_\\mathrm{ACC}$}",
+        "\\newcommand{\leapplus}{LEAP$_\\mathrm{KDEy}$}",
+        "\\newcommand{\leapppskde}{S-LEAP$_\\mathrm{KDEy}$}",
+        "\\newcommand{\oleapkde}{O-LEAP$_\\mathrm{KDEy}$}",
+    ]
+    Table.LatexPDF(pdf_path, tables=tbls, landscape=False, new_commands=new_commands)
 
 
 if __name__ == "__main__":
     tables()
-    # leap_true_solve()

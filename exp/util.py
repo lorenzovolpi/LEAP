@@ -1,19 +1,45 @@
 import glob
 import logging
 import os
-import os.path
 from pathlib import Path
 from time import time
 
 import numpy as np
 import pandas as pd
-import quacc as qc
-import quapy as qp
-from quapy.protocol import UPP
 
+import leap
 from exp.config import PROBLEM, get_method_names, root_dir
 from leap.models.base import ClassifierAccuracyPrediction
-from leap.models.cont_table import CAPContingencyTable, LabelledCollection
+from leap.models.cont_table import CAPContingencyTable
+
+
+def load_results(filter_methods=None) -> pd.DataFrame:
+    dfs = []
+    _methods = get_method_names() if filter_methods is None else filter_methods
+    for path in glob.glob(os.path.join(root_dir, "data", PROBLEM, "**", "*.json"), recursive=True):
+        if Path(path).stem in _methods:
+            dfs.append(pd.read_json(path))
+
+    return pd.concat(dfs, axis=0)
+
+
+def rename_datasets(mapping, df, datasets):
+    _datasets = [mapping.get(d, d) for d in datasets]
+    for d, rd in mapping.items():
+        df.loc[df["dataset"] == d, "dataset"] = rd
+    return df, _datasets
+
+
+def rename_methods(mapping, df, methods, baselines=None):
+    _methods = [mapping.get(m, m) for m in methods]
+    for m, rm in mapping.items():
+        df.loc[df["method"] == m, "method"] = rm
+
+    if baselines is None:
+        return df, _methods
+    else:
+        _baselines = [mapping.get(b, b) for b in baselines]
+        return df, _methods, _baselines
 
 
 def method_can_switch(method):
@@ -72,15 +98,9 @@ def get_acc_name(acc_name):
     }
 
 
-def split_validation(V: LabelledCollection, ratio=0.6, repeats=100):
-    v_train, v_val = V.split_stratified(ratio, random_state=qp.environ["_R_SEED"])
-    val_prot = UPP(v_val, repeats=repeats, return_type="labelled_collection")
-    return v_train, val_prot
-
-
 def get_logger(id="quacc"):
     _name = f"{id}_log"
-    _path = os.path.join(qc.env["OUT_DIR"], f"{id}.log")
+    _path = os.path.join(leap.env["OUT_DIR"], f"{id}.log")
     logger = logging.getLogger(_name)
     logger.setLevel(logging.DEBUG)
     if len(logger.handlers) == 0:
@@ -103,32 +123,3 @@ def timestamp(t_train: float, t_test_ave: float) -> str:
     t_train = round(t_train, ndigits=3)
     t_test_ave = round(t_test_ave, ndigits=3)
     return f"{t_train=}s; {t_test_ave=}s"
-
-
-def load_results() -> pd.DataFrame:
-    dfs = []
-    _methods = get_method_names()
-    for path in glob.glob(os.path.join(root_dir, PROBLEM, "**", "*.json"), recursive=True):
-        if Path(path).stem in _methods:
-            dfs.append(pd.read_json(path))
-
-    return pd.concat(dfs, axis=0)
-
-
-def rename_datasets(mapping, df, datasets):
-    _datasets = [mapping.get(d, d) for d in datasets]
-    for d, rd in mapping.items():
-        df.loc[df["dataset"] == d, "dataset"] = rd
-    return df, _datasets
-
-
-def rename_methods(mapping, df, methods, baselines=None):
-    _methods = [mapping.get(m, m) for m in methods]
-    for m, rm in mapping.items():
-        df.loc[df["method"] == m, "method"] = rm
-
-    if baselines is None:
-        return df, _methods
-    else:
-        _baselines = [mapping.get(b, b) for b in baselines]
-        return df, _methods, _baselines
