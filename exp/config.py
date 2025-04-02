@@ -22,12 +22,12 @@ from leap.models.direct import ATC, DoC
 from leap.models.utils import OracleQuantifier
 
 PROJECT = "leap"
-root_dir = os.path.join(leap.env["OUT_DIR"], PROJECT)
+root_dir = leap.env["OUT_DIR"]
 NUM_TEST = 1000
 qp.environ["_R_SEED"] = 0
 CSV_SEP = ","
 
-PROBLEM = "multiclass"
+PROBLEM = "binary"
 
 
 def split_validation(V: LabelledCollection, ratio=0.6, repeats=100):

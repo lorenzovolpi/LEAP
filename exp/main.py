@@ -207,24 +207,6 @@ def experiments():
                 log.warning(f"[{cls_name}@{dataset_name}] {method_name}: {acc_name} gave error '{r.err}' - skipping")
 
 
-# TODO: parallel support for transformers
-#
-# def transofrmers():
-#     for (cls_name, h), (dataset_name, (V, U), L_prev) in gen_transformer_model_dataset():
-#         # compute and set the SAMPLE_SIZE for each dataset
-#         qp.environ["SAMPLE_SIZE"] = 1000
-#
-#         # check if all results for current combination already exist
-#         # if so, skip the combination
-#         if all_exist_pre_check(dataset_name, cls_name):
-#             log.info(f"All results for {cls_name} over {dataset_name} exist, skipping")
-#             continue
-#
-#         log.info(f"Computing {cls_name} over {dataset_name}")
-#         D = DatasetBundle(L_prev, V, U).create_bundle(h)
-#         exp_protocol(cls_name, dataset_name, h, D)
-
-
 if __name__ == "__main__":
     try:
         log.info("-" * 31 + "  start  " + "-" * 31)
