@@ -14,3 +14,7 @@
 # bash files
 *.sh
 *.env
+
+# results
+output/data
+output/tables
