@@ -1,7 +1,7 @@
 import itertools as IT
 from abc import abstractmethod
 from copy import deepcopy
-from typing import Callable
+from typing import Callable, override
 
 import numpy as np
 from quapy.data.base import LabelledCollection as LC
@@ -11,7 +11,6 @@ from quapy.protocol import AbstractProtocol
 from scipy import optimize
 from sklearn.base import BaseEstimator
 from sklearn.metrics import confusion_matrix
-from typing_extensions import override
 
 from leap.models.base import ClassifierAccuracyPrediction
 
