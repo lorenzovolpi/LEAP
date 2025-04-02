@@ -4,13 +4,6 @@
 # cache
 *__pycache__*
 
-output_old
-dataset_stats
-# results
-output/plots
-# plots
-tables
-
 # log files
 *.log
 *.out
