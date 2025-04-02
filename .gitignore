@@ -16,5 +16,4 @@
 *.env
 
 # results
-output/data
 output/tables
