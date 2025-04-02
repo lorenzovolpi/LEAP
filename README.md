@@ -23,20 +23,29 @@ python -m pip install -r requirements.txt
 To run the experiments shown in the cited paper, run:
 
 ```bash
-python -m leap.experiments.run
+python -m exp.main
 ```
 
 To generate the plots run:
 
 ```bash
-python -m leap.experiments.plotting
+python -m exp.plot    # for diagonal plots relating true and estimated accuracy
+python -m exp.ctdiff  # for heatmap plots showint contingency table errors
+python -m exp.times   # for inference time plots
 ```
 
 To generate the tables run:
 
 ```bash
-python -m leap.experiments.tables
+python -m exp.table
 ```
 
-The results for the experiments, the plots and the tables will be saved, respectively, in `results`, `plots` and `tables`, all rooted in the current folder.  
-To change the output root folder export the `PHD_OUT_DIR` environment variable before running the above commands.
+The `output` folder contains the subfolders where the results for the experiments 
+(`data`), the diagonal plots (`plots`), the heatmaps (`ctdiff`), the inference time 
+plots (`times`) and the tables (`tables`) will be stored.
+To change the output root folder export the `LEAP_OUT_DIR` environment variable 
+before running the above commands.
+
+The execution of the tests is parallelised, with each combination of (`classifier`, `dataset`, `method`)
+running in a separate process. The `LEAP_N_JOBS` environment variable controls the number
+of availables processors to dedicate to the execution.
