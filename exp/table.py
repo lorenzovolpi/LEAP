@@ -31,6 +31,16 @@ dataset_map = {
 }
 
 
+def decorate_datasets(df, datasets):
+    def _decorate(d):
+        return r"\textsf{" + d + r"}"
+
+    _datasets = [_decorate(d) for d in datasets]
+    for d in df["dataset"].unique():
+        df.loc[df["dataset"] == d, "dataset"] = _decorate(d)
+    return df, _datasets
+
+
 def tables():
     classifiers = get_classifier_names()
     datasets = get_dataset_names()
@@ -65,6 +75,7 @@ def tables():
         _df = res.loc[(res["classifier"] == classifier) & (res["acc_name"] == acc), :]
         name = f"{PROBLEM}_{classifier}_{acc}"
         _df, _datasets = rename_datasets(dataset_map, _df, datasets)
+        _df, _datasets = decorate_datasets(_df, _datasets)
         _df, _methods, _baselines = rename_methods(method_map, _df, methods, baselines)
         tbls.append(gen_table(_df, name, _datasets, _methods, _baselines))
 
