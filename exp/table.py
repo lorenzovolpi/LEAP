@@ -11,12 +11,12 @@ import numpy as np
 import pandas as pd
 
 import exp.env as env
-from exp.leap.config import (
+from exp.config import (
     get_acc_names,
     get_classifier_names,
     get_dataset_names,
 )
-from exp.leap.util import decorate_datasets, load_results, rename_datasets, rename_methods
+from exp.util import decorate_datasets, load_results, rename_datasets, rename_methods
 from leap.commons import NaNError
 from leap.table import Format, Table
 
@@ -413,9 +413,9 @@ def leap_true_solve():
 
 
 def confidence_intervals():
-    from exp.leap.bootstrap import get_acc_names as bootstrap_acc_names
-    from exp.leap.bootstrap import get_classifier_names as bootstrap_classifier_names
-    from exp.leap.bootstrap import get_method_names as bootstrap_method_names
+    from exp.bootstrap import get_acc_names as bootstrap_acc_names
+    from exp.bootstrap import get_classifier_names as bootstrap_classifier_names
+    from exp.bootstrap import get_method_names as bootstrap_method_names
 
     def add_to_table(tbl: Table, df: pd.DataFrame, dataset, methods, column):
         for method in methods:
@@ -481,9 +481,9 @@ def confidence_intervals():
 
 
 def rcv1_tables():
-    from exp.leap.rcv1 import get_acc_names as rcv1_accs
-    from exp.leap.rcv1 import get_dataset_names as rcv1_datasets
-    from exp.leap.rcv1 import get_method_names as rcv1_methods
+    from exp.rcv1 import get_acc_names as rcv1_accs
+    from exp.rcv1 import get_dataset_names as rcv1_datasets
+    from exp.rcv1 import get_method_names as rcv1_methods
 
     def add_to_table(tbl: Table, df: pd.DataFrame, cls_name, methods, column):
         for method in methods:

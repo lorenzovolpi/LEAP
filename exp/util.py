@@ -1,13 +1,19 @@
 import glob
 import itertools as IT
+import logging
 import os
 from pathlib import Path
+from time import time
 
+import numpy as np
 import pandas as pd
 from quacc.models.cont_table import LEAP
 
 import exp.env as env
-from exp.leap.config import gen_acc_measure, get_method_names, is_excluded
+import leap
+from exp.config import gen_acc_measure, get_method_names, is_excluded
+from leap.models.base import ClassifierAccuracyPrediction
+from leap.models.cont_table import CAPContingencyTable
 
 
 def local_path(dataset_name, cls_name, method_name, acc_name, subproject=None):
@@ -109,3 +115,64 @@ def get_extra_from_method(df, method):
 def gen_method_df(df_len, **data):
     data = data | {k: [v] * df_len for k, v in data.items() if not isinstance(v, list)}
     return pd.DataFrame.from_dict(data, orient="columns")
+
+
+def fit_or_switch(method: ClassifierAccuracyPrediction, V, V_posteriors, acc_fn, is_fit):
+    if hasattr(method, "switch"):
+        method, t_train = method.switch(acc_fn), None
+        if not is_fit:
+            tinit = time()
+            method.fit(V, V_posteriors)
+            t_train = time() - tinit
+        return method, t_train
+    elif hasattr(method, "switch_and_fit"):
+        tinit = time()
+        method = method.switch_and_fit(acc_fn, V, V_posteriors)
+        t_train = time() - tinit
+        return method, t_train
+    else:
+        ValueError("invalid method")
+
+
+def get_ct_predictions(method: ClassifierAccuracyPrediction, test_prot, test_prot_posteriors):
+    tinit = time()
+    if isinstance(method, CAPContingencyTable):
+        estim_accs, estim_cts = method.batch_predict(test_prot, test_prot_posteriors, get_estim_cts=True)
+    else:
+        estim_accs, estim_cts = method.batch_predict(test_prot, test_prot_posteriors), None
+    t_test_ave = (time() - tinit) / test_prot.total()
+    return estim_accs, estim_cts, t_test_ave
+
+
+def get_logger(id="quacc"):
+    _name = f"{id}_log"
+    _path = os.path.join(leap.env["OUT_DIR"], f"{id}.log")
+    logger = logging.getLogger(_name)
+    logger.setLevel(logging.DEBUG)
+    if len(logger.handlers) == 0:
+        fh = logging.FileHandler(_path)
+        fh.setLevel(logging.DEBUG)
+        formatter = logging.Formatter(fmt="%(asctime)s %(levelname)s %(message)s", datefmt="%b %d %H:%M:%S")
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
+
+    return logger
+
+
+def get_plain_prev(prev: np.ndarray):
+    if prev.shape[0] > 2:
+        return np.around(prev[1:], decimals=4).tolist()
+    else:
+        return float(np.around(prev, decimals=4)[-1])
+
+
+def timestamp(t_train: float, t_test_ave: float) -> str:
+    t_train = round(t_train, ndigits=3)
+    t_test_ave = round(t_test_ave, ndigits=3)
+    return f"{t_train=}s; {t_test_ave=}s"
+
+
+def gen_model_dataset(_gen_model, _gen_dataset):
+    for model in _gen_model():
+        for dataset in _gen_dataset():
+            yield model, dataset

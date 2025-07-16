@@ -131,9 +131,9 @@ def plots():
 
 
 def plot_sample_size():
-    from exp.leap.sample_size import get_acc_names as ss_acc_names
-    from exp.leap.sample_size import get_classifier_names as ss_classifier_names
-    from exp.leap.sample_size import get_dataset_names as ss_dataset_names
+    from exp.sample_size import get_acc_names as ss_acc_names
+    from exp.sample_size import get_classifier_names as ss_classifier_names
+    from exp.sample_size import get_dataset_names as ss_dataset_names
 
     # methods = ["DoC", "LEAP(KDEy-MLP)", "PHD(KDEy-MLP)", "OCE(KDEy-MLP)-SLSQP"]
     methods = ["DoC", "O-LEAP(KDEy-MLP)"]
