@@ -4,19 +4,18 @@ from typing import Callable
 
 import numpy as np
 import ot
-import quacc as qc
-import quacc.models.utils as utils
 import quapy as qp
 import scipy as sp
-from quacc.error import vanilla_acc
-from quacc.models.base import ClassifierAccuracyPrediction
-from quacc.models.utils import max_conf, neg_entropy
 from quapy.data.base import LabelledCollection
 from quapy.method.aggregative import AggregativeQuantifier
 from quapy.protocol import UPP, AbstractProtocol
 from scipy.sparse import issparse
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import confusion_matrix
+
+from leap.error import vanilla_acc
+from leap.models.base import ClassifierAccuracyPrediction
+from leap.models.utils import max_conf, neg_entropy
 
 
 def _one_hot(arr: np.ndarray, num_classes=None):
@@ -278,21 +277,12 @@ class COT(CAPDirect):
         self.n_classes = val.n_classes
         self.classes = val.classes_
 
-        # val_y = val.y
-        # val_y_hat = np.argmax(posteriors, axis=-1)
-        # print(val_y, val_y_hat)
-        # print(val_y.shape, val_y_hat.shape)
-        # self.val_labels = LabelledCollection(val_y_hat, val_y, classes=self.classes)
-
         self.val_prior = val.prevalence()
 
         return self
 
     def predict(self, X, posteriors):
         sample_size = X.shape[0]
-
-        # val_y_hat, val_y = self.val_labels.uniform_sampling(sample_size).Xy
-        # val_lbls = val_y if self.exact_train_prev else val_y_hat
 
         val_lbls = _sample_label_dist(sample_size, self.val_prior, self.n_classes)
 
@@ -327,10 +317,6 @@ class COTT(CAPDirect):
         self.n_classes = val.n_classes
         self.classes = val.classes_
 
-        # val_y = val.y
-        # val_y_hat = np.argmax(posteriors, axis=-1)
-        # self.val_labels = LabelledCollection(val_y_hat, val_y, classes=self.classes)
-
         self.val_prior = val.prevalence()
         self.threshold = self._get_threshold(val, posteriors)
 
@@ -338,9 +324,6 @@ class COTT(CAPDirect):
 
     def predict(self, X, posteriors):
         sample_size = X.shape[0]
-
-        # val_y_hat, val_y = self.val_labels.uniform_sampling(sample_size).Xy
-        # val_lbls = val_y if self.exact_train_prev else val_y_hat
 
         val_lbls = _sample_label_dist(sample_size, self.val_prior, self.n_classes)
         val_one_hot = _one_hot(val_lbls, num_classes=self.n_classes)
