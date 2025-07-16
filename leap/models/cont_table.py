@@ -13,6 +13,7 @@ from sklearn.base import BaseEstimator
 from sklearn.metrics import confusion_matrix
 
 from calibration.lascal import LasCal
+from leap.commons import SparseMatrixBuilder
 from leap.models._leap_opt import (
     _optim_Adam,
     _optim_Adam_batched,
@@ -21,7 +22,6 @@ from leap.models._leap_opt import (
     _optim_minimize,
 )
 from leap.models.base import ClassifierAccuracyPrediction
-from leap.utils.commons import SparseMatrixBuilder
 
 
 class LabelledCollection(LC):
