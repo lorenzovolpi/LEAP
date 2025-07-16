@@ -2,6 +2,7 @@ import os
 
 env = {
     "OUT_DIR": os.getenv("LEAP_OUT_DIR", "./output"),
+    "LEAP_DATA": os.getenv("LEAP_DATA", os.path.expanduser("~/leap_data")),
     "QUAPY_DATA": os.getenv("LEAP_QUAPY_DATA", os.path.expanduser("~/quapy_data")),
     "SKLEARN_DATA": os.getenv("LEAP_SKLEARN_DATA", os.path.expanduser("~/scikit_learn_data")),
     "N_JOBS": int(os.getenv("LEAP_N_JOBS", -2)),
