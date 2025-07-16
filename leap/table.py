@@ -467,6 +467,8 @@ class Table:
             )
             leave_empty = False
             for bench in self.get_benchmarks():
+                # if bench == r"\textsf{iris.3}" and method == r"PrediQuant":
+                #     pdb.set_trace()
                 rank = self.get(benchmark=bench, method=method).rank()
                 if rank is not None:
                     method_rank_mean.append(rank)
@@ -577,12 +579,12 @@ class Table:
         lines.append(begin_tabular)
         lines.append(toprule)
 
-        ln = corner
-        ln += " & ".join([col_replace.get(col, col) for col in col_order])
+        l = corner
+        l += " & ".join([col_replace.get(col, col) for col in col_order])
         if add_mean_col:
-            ln += " & " + average_label
-        ln += midrule
-        lines.append(ln)
+            l += " & " + average_label
+        l += midrule
+        lines.append(l)
 
         # printed_table = [[self.get(benchmark=col if transpose else row, method=row if transpose else col).print() for col in col_order] for row in row_order]
         # printed_lengths = np.zeros(len(row_order), len(col_order))
@@ -593,37 +595,37 @@ class Table:
 
         for i, row in enumerate(row_order):
             rowname = row_replace.get(row, row)
-            ln = rowname + " & "
-            ln += " & ".join(
+            l = rowname + " & "
+            l += " & ".join(
                 [
                     self.get(benchmark=col if transpose else row, method=row if transpose else col).print()
                     for col in col_order
                 ]
             )
             if add_mean_col:
-                ln += " & " + mean_cells[i].print()
+                l += " & " + mean_cells[i].print()
 
             if i < len(row_order) - 1:
-                ln += endl
+                l += endl
             else:  # last line
                 if add_mean_row:  # midrule, since there will be an additional row
-                    ln += midrule
+                    l += midrule
                 else:
-                    ln += bottomrule  # bottomrule, this is indeed the last row
-            lines.append(ln)
+                    l += bottomrule  # bottomrule, this is indeed the last row
+            lines.append(l)
 
         if add_mean_row:
-            ln = average_label + " & "
-            ln += " & ".join([mean_cell.print() for mean_cell in mean_cells])
+            l = average_label + " & "
+            l += " & ".join([mean_cell.print() for mean_cell in mean_cells])
 
             if self.format.with_rank_mean:
-                ln += "\\\\"
-                lines.append(ln)
-                ln = rank_average_label + " & "
-                ln += " & ".join([mean_cell.print() for mean_cell in rankmean_cells])
+                l += "\\\\"
+                lines.append(l)
+                l = rank_average_label + " & "
+                l += " & ".join([mean_cell.print() for mean_cell in rankmean_cells])
 
-            ln += bottomrule
-            lines.append(ln)
+            l += bottomrule
+            lines.append(l)
 
         lines.append("\\end{tabular}")
 
@@ -711,6 +713,7 @@ class Table:
         lines.append("\\usepackage{booktabs}")
         if landscape:
             lines.append("\\usepackage[landscape]{geometry}")
+        lines.extend(kwargs.pop("new_commands", []))
         lines.append("")
         lines.append("\\begin{document}")
         for table in tables:
