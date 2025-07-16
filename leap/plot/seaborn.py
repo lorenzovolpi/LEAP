@@ -1,8 +1,8 @@
-import os
-
 import pandas as pd
 import seaborn as sns
 from matplotlib.axes import Axes
+
+from leap.plot.utils import get_binned_values, save_figure
 
 sns.set_theme(style="whitegrid")
 sns.set_palette("colorblind")
@@ -10,22 +10,56 @@ sns.set_palette("colorblind")
 DPI = 300
 
 
-def _save_figure(plot: Axes, basedir, filename):
-    exts = [
-        # "svg",
-        "pdf",
-        "png",
-    ]
-    files = [os.path.join(basedir, f"{filename}.{ext}") for ext in exts]
-    for f in files:
-        plot.figure.savefig(f, bbox_inches="tight", dpi=DPI)
-    plot.figure.clear()
+def _config_legend(plot: Axes):
+    plot.legend(title="")
+    sns.move_legend(plot, "lower center", bbox_to_anchor=(1, 0.5), ncol=1)
+
+
+def plot_diagonal(
+    df: pd.DataFrame,
+    *,
+    basedir="output",
+    filename="diagonal",
+    **kwargs,
+):
+    plot = sns.relplot(
+        data=df,
+        kind="scatter",
+        x="true_accs",
+        y="estim_accs",
+        hue="method",
+        alpha=0.2,
+        aspect=1,
+        facet_kws=dict(xlim=(0, 1), ylim=(0, 1)),
+    )
+    for ax in plot.axes.flat:
+        ax.axline((0, 0), slope=1, color="black", linestyle="--", linewidth=1)
+
+    sns.move_legend(
+        plot,
+        "lower center",
+        bbox_to_anchor=(0.78, 0.5),
+        ncol=kwargs.get("legend_ncol", 1),
+    )
+    plot.legend.set_title("")
+    plot.legend.set_frame_on(True)
+    for lh in plot.legend.legend_handles:
+        lh.set_alpha(1)
+        lh.set_markersize(8)
+
+    if "x_label" in kwargs:
+        plot.set_xlabels(kwargs["x_label"])
+    if "y_label" in kwargs:
+        plot.set_ylabels(kwargs["y_label"])
+
+    return save_figure(plot=plot, basedir=basedir, filename=filename)
 
 
 def plot_diagonal_grid(
     df: pd.DataFrame,
-    method_names,
     *,
+    methods_order=None,
+    datasets_order=None,
     basedir="output",
     filename="diagonal_grid",
     n_cols=1,
@@ -44,9 +78,10 @@ def plot_diagonal_grid(
     plot = sns.FacetGrid(
         df,
         col="dataset",
+        col_order=datasets_order,
         col_wrap=n_cols,
         hue="method",
-        hue_order=method_names,
+        hue_order=methods_order,
         xlim=(0, 1),
         ylim=(0, 1),
         aspect=aspect,
@@ -80,4 +115,35 @@ def plot_diagonal_grid(
     plot.set_xlabels(x_label)
     plot.set_ylabels(y_label)
 
-    return _save_figure(plot=plot, basedir=basedir, filename=filename)
+    return save_figure(plot=plot, basedir=basedir, filename=filename)
+
+
+def plot_shift(
+    df: pd.DataFrame,
+    *,
+    n_bins=20,
+    basedir="results",
+    problem="binary",
+    filename=None,
+    linewidth=1,
+    **kwargs,
+):
+    # binning on shift values
+    df.loc[:, "shifts_bin"] = get_binned_values(df, "shifts", n_bins)
+
+    plot = sns.lineplot(
+        data=df,
+        x="shifts_bin",
+        y="acc_err",
+        hue="method",
+        estimator="mean",
+        errorbar=None,
+        linewidth=linewidth,
+    )
+
+    _config_legend(plot)
+    if "x_label" in kwargs:
+        plot.set_xlabel(kwargs["x_label"])
+    if "y_label" in kwargs:
+        plot.set_ylabel(kwargs["y_label"])
+    return save_figure(plot=plot, basedir=basedir, filename=filename)
