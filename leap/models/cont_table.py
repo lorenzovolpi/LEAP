@@ -733,5 +733,5 @@ class OverConstrainedEquationsCAP(CAPContingencyTableQ):
 
 
 LEAP = NsquaredEquationsCAP
-PHD = ContTableTransferCAP
-OCE = OverConstrainedEquationsCAP
+S_LEAP = ContTableTransferCAP
+O_LEAP = OverConstrainedEquationsCAP

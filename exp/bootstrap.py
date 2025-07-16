@@ -31,7 +31,7 @@ from exp.util import (
 )
 from leap.commons import get_shift, parallel, true_acc
 from leap.error import vanilla_acc
-from leap.models.cont_table import OCE
+from leap.models.cont_table import O_LEAP
 from leap.models.direct import DoC
 
 SUBPROJECT = "bootstrap"
@@ -93,7 +93,7 @@ def gen_methods(h: BaseEstimator, D: RepDatasetBundle):
     _, acc_fn = next(gen_acc_measure())
     yield "DoC", DoC(acc_fn, D.V2_prot, D.V2_prot_posteriors), D.V1, D.V1_posteriors
     # yield "S-LEAP(KDEy-MLP)", PHD(acc_fn, kdey()), D.V, D.V_posteriors
-    yield "O-LEAP(KDEy-MLP)", OCE(acc_fn, kdey()), D.V, D.V_posteriors
+    yield "O-LEAP(KDEy-MLP)", O_LEAP(acc_fn, kdey()), D.V, D.V_posteriors
 
 
 def gen_classifiers():
