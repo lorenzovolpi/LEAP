@@ -1,13 +1,21 @@
+# [build-system]
+# requires = ["setuptools >= 77.0.3"]
+# build-backend = "setuptools.build_meta"
+
 [project]
 name = "leap"
 version = "0.1.0"
 requires-python = ">=3.10"
 dependencies = [
-  "quapy>=0.1.9", 
-  "seaborn>=0.13.2", 
+  "quapy>=0.1.9",
+  "seaborn>=0.13.2",
   "cvxpy>=1.6.6",
   "lascal @ git+https://github.com/tpopordanoska/label-shift-calibration.git",
+  "torch>=2.7.1",
 ]
+
+[tool.setuptools.packages.find]
+include = ["leap"]
 
 [tool.ruff]
 line-length = 120
