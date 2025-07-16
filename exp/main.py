@@ -1,24 +1,30 @@
 import itertools as IT
 import os
+from argparse import ArgumentParser
+from dataclasses import dataclass
+from pathlib import Path
 from traceback import print_exception
 
 import numpy as np
 import pandas as pd
+import quacc as qc
 import quapy as qp
 from sklearn.base import clone as skl_clone
 
-import leap
-from exp.config import (
-    PROBLEM,
-    PROJECT,
+import exp.leap.config as cfg
+import exp.leap.env as env
+from exp.leap.config import (
+    EXP,
     DatasetBundle,
     gen_acc_measure,
     gen_classifiers,
     gen_datasets,
     gen_methods,
+    get_acc_names,
     get_method_names,
-    root_dir,
+    is_excluded,
 )
+from exp.leap.util import all_exist_pre_check, gen_method_df, get_extra_from_method, local_path
 from exp.util import (
     fit_or_switch,
     gen_model_dataset,
@@ -28,76 +34,10 @@ from exp.util import (
     timestamp,
 )
 from leap.commons import get_shift, parallel, true_acc
-from leap.models.cont_table import LEAP
 
-log = get_logger(id=PROJECT)
+log = get_logger(id=env.PROJECT)
 
 qp.environ["SAMPLE_SIZE"] = 100
-
-
-def local_path(dataset_name, cls_name, method_name, acc_name):
-    parent_dir = os.path.join(root_dir, "data", PROBLEM, cls_name, acc_name, dataset_name)
-    os.makedirs(parent_dir, exist_ok=True)
-    return os.path.join(parent_dir, f"{method_name}.json")
-
-
-def is_excluded(classifier, dataset, method, acc):
-    return False
-
-
-def get_extra_from_method(df, method):
-    if isinstance(method, LEAP):
-        df["true_solve"] = method._true_solve_log[-1]
-
-
-def all_exist_pre_check(dataset_name, cls_name):
-    method_names = get_method_names()
-    acc_names = [acc_name for acc_name, _ in gen_acc_measure()]
-
-    all_exist = True
-    for method, acc in IT.product(method_names, acc_names):
-        if is_excluded(cls_name, dataset_name, method, acc):
-            continue
-        path = local_path(dataset_name, cls_name, method, acc)
-        all_exist = os.path.exists(path)
-        if not all_exist:
-            break
-
-    return all_exist
-
-
-def gen_method_df(df_len, **data):
-    data = data | {k: [v] * df_len for k, v in data.items() if not isinstance(v, list)}
-    return pd.DataFrame.from_dict(data, orient="columns")
-
-
-class EXP:
-    def __init__(self, code, err=None):
-        self.code = code
-        self.err = err
-
-    @classmethod
-    def SUCCESS(cls):
-        return EXP(200)
-
-    @classmethod
-    def EXISTS(cls):
-        return EXP(300)
-
-    @classmethod
-    def ERROR(cls, e):
-        return EXP(400, err=e)
-
-    @property
-    def ok(self):
-        return self.code == 200
-
-    @property
-    def old(self):
-        return self.code == 300
-
-    def error(self):
-        return self.code == 400
 
 
 def exp_protocol(args):
@@ -112,7 +52,7 @@ def exp_protocol(args):
             continue
         path = local_path(dataset_name, cls_name, method_name, acc_name)
         if os.path.exists(path):
-            results.append((cls_name, dataset_name, acc_name, method_name, None, None, None, EXP.EXISTS()))
+            results.append(EXP.EXISTS(cls_name, dataset_name, acc_name, method_name))
             continue
 
         try:
@@ -127,10 +67,10 @@ def exp_protocol(args):
                 estim_cts = [ct.tolist() for ct in estim_cts]
         except Exception as e:
             print_exception(e)
-            results.append((cls_name, dataset_name, acc_name, method_name, None, None, None, EXP.ERROR(e)))
+            results.append(EXP.ERROR(e, cls_name, dataset_name, acc_name, method_name))
             continue
 
-        ae = leap.error.ae(np.array(true_accs[acc_name]), np.array(estim_accs)).tolist()
+        ae = qc.error.ae(np.array(true_accs[acc_name]), np.array(estim_accs)).tolist()
 
         df_len = len(estim_accs)
         method_df = gen_method_df(
@@ -152,36 +92,65 @@ def exp_protocol(args):
         )
         get_extra_from_method(method_df, method)
 
-        results.append((cls_name, dataset_name, acc_name, method_name, method_df, t_train, t_test_ave, EXP.SUCCESS()))
+        results.append(
+            EXP.SUCCESS(
+                cls_name, dataset_name, acc_name, method_name, df=method_df, t_train=t_train, t_test_ave=t_test_ave
+            )
+        )
 
     return results
 
 
+def train_cls(args):
+    (cls_name, orig_h), (dataset_name, (L, V, U)) = args
+    #
+    # check if all results for current combination already exist
+    # if so, skip the combination
+    if all_exist_pre_check(dataset_name, cls_name):
+        return (cls_name, dataset_name, None, None, None)
+    else:
+        # clone model from the original one
+        h = skl_clone(orig_h)
+        # fit model
+        h.fit(*L.Xy)
+        # create dataset bundle
+        D = DatasetBundle(L.prevalence(), V, U).create_bundle(h)
+        # compute true accs for h on dataset
+        true_accs = {}
+        for acc_name, acc_fn in gen_acc_measure():
+            true_accs[acc_name] = [true_acc(h, acc_fn, Ui) for Ui in D.test_prot()]
+        # store h-dataset combination
+        return (cls_name, dataset_name, h, D, true_accs)
+
+
 def experiments():
+    cls_train_args = list(gen_model_dataset(gen_classifiers, gen_datasets))
+    cls_dataset_gen = parallel(
+        func=train_cls,
+        args_list=cls_train_args,
+        n_jobs=qc.env["N_JOBS"],
+        return_as="generator_unordered",
+    )
     cls_dataset = []
-    for (cls_name, orig_h), (dataset_name, (L, V, U)) in gen_model_dataset(gen_classifiers, gen_datasets):
-        # check if all results for current combination already exist
-        # if so, skip the combination
-        if all_exist_pre_check(dataset_name, cls_name):
+    for cls_name, dataset_name, h, D, true_accs in cls_dataset_gen:
+        if h is None and D is None:
             log.info(f"All results for {cls_name} over {dataset_name} exist, skipping")
         else:
-            # clone model from the original one
-            h = skl_clone(orig_h)
-            # fit model
-            h.fit(*L.Xy)
             log.info(f"Trained {cls_name} over {dataset_name}")
-            # create dataset bundle
-            D = DatasetBundle(L.prevalence(), V, U).create_bundle(h)
-            # compute true accs for h on dataset
-            true_accs = {}
-            for acc_name, acc_fn in gen_acc_measure():
-                true_accs[acc_name] = [true_acc(h, acc_fn, Ui) for Ui in D.test_prot()]
-            # store h-dataset combination
             cls_dataset.append((cls_name, dataset_name, h, D, true_accs))
 
     exp_prot_args_list = []
     for cls_name, dataset_name, h, D, true_accs in cls_dataset:
         for method_name, method, val, val_posteriors in gen_methods(h, D):
+            if all(
+                [
+                    os.path.exists(local_path(dataset_name, cls_name, method_name, acc_name))
+                    for acc_name in get_acc_names()
+                ]
+            ):
+                log.info(f"([{cls_name}@{dataset_name}] {method_name} on all acc measures exists, skipping")
+                continue
+
             exp_prot_args_list.append(
                 (cls_name, dataset_name, h, D, true_accs, method_name, method, val, val_posteriors)
             )
@@ -189,25 +158,81 @@ def experiments():
     results_gen = parallel(
         func=exp_protocol,
         args_list=exp_prot_args_list,
-        n_jobs=leap.env["N_JOBS"],
+        n_jobs=qc.env["N_JOBS"],
         return_as="generator_unordered",
+        max_nbytes=None,
     )
 
+    exp_cnt, n_exp = 0, len(exp_prot_args_list) * len(get_acc_names())
     for res in results_gen:
-        for cls_name, dataset_name, acc_name, method_name, method_df, t_train, t_test_ave, r in res:
+        for r in res:
+            exp_cnt += 1
             if r.ok:
-                path = local_path(dataset_name, cls_name, method_name, acc_name)
-                method_df.to_json(path)
+                path = local_path(r.dataset_name, r.cls_name, r.method_name, r.acc_name)
+                r.df.to_json(path)
                 log.info(
-                    f"[{cls_name}@{dataset_name}] {method_name} on {acc_name} done [{timestamp(t_train, t_test_ave)}]"
+                    f"({exp_cnt}/{n_exp}) [{r.cls_name}@{r.dataset_name}] {r.method_name} on {r.acc_name} done [{timestamp(r.t_train, r.t_test_ave)}]"
                 )
             elif r.old:
-                log.info(f"[{cls_name}@{dataset_name}] {method_name} on {acc_name} exists, skipping")
+                log.info(
+                    f"({exp_cnt}/{n_exp}) [{r.cls_name}@{r.dataset_name}] {r.method_name} on {r.acc_name} exists, skipping"
+                )
             elif r.error:
-                log.warning(f"[{cls_name}@{dataset_name}] {method_name}: {acc_name} gave error '{r.err}' - skipping")
+                log.warning(
+                    f"({exp_cnt}/{n_exp}) [{r.cls_name}@{r.dataset_name}] {r.method_name}: {r.acc_name} gave error '{r.err}' - skipping"
+                )
+
+
+# def rename_files():
+#     import glob
+#
+#     _replace = {"PHD": "S-LEAP"}
+#     for _old, _new in _replace.items():
+#         print(cfg.root_dir, cfg.PROBLEM)
+#         for path in glob.glob(os.path.join(cfg.root_dir, cfg.PROBLEM, "**", f"{_old}*.json"), recursive=True):
+#             name = Path(path).stem
+#             new_path = path.replace(_old, _new)
+#             print(path, new_path)
+#             new_name = Path(new_path).stem
+#             os.rename(path, new_path)
+#
+#             df = pd.read_json(new_path)
+#             df.loc[df["method"] == name, "method"] = new_name
+#             df.to_json(new_path)
+#
+#
+# def import_leap_from_bcuda():
+#     import glob
+#     import shutil
+#
+#     bcuda_dir = os.path.join(qc.env["OUT_DIR"], "leap_bcuda")
+#     leap_variants = ["ACC", "ACC-MLP", "CC", "CC-MLP", "KDEy", "KDEy-MLP", "oracle"]
+#     for path in glob.glob(os.path.join(bcuda_dir, cfg.PROBLEM, "**", "LEAP*.json"), recursive=True):
+#         old_name = Path(path).stem
+#         if not any([f"({_v})" in old_name for _v in leap_variants]):
+#             continue
+#         new_name = old_name + "-SLSQP"
+#         new_path = path.replace(bcuda_dir, cfg.root_dir).replace(old_name, new_name)
+#         shutil.copy2(path, new_path)
+#
+#         df = pd.read_json(new_path)
+#         df.loc[df["method"] == old_name, "method"] = new_name
+#         df.to_json(new_path)
+#
+#         print(path, new_path, "", sep="\n")
 
 
 if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument("--rename", action="store_true", help="Rename files")
+    parser.add_argument("--ileap", action="store_true", help="Import LEAP results from leap_bcuda directory")
+    args = parser.parse_args()
+
+    # if args.rename:
+    #     rename_files()
+    # elif args.ileap:
+    #     import_leap_from_bcuda()
+    # else:
     try:
         log.info("-" * 31 + "  start  " + "-" * 31)
         experiments()
