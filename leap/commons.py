@@ -4,13 +4,14 @@ from contextlib import ExitStack, contextmanager
 from typing import Callable, Literal
 
 import numpy as np
-import quacc as qc
 import quapy as qp
 from joblib import Parallel, delayed
 from quapy.data.base import LabelledCollection
 from scipy.sparse import coo_array
 from sklearn.base import BaseEstimator
 from sklearn.metrics import confusion_matrix
+
+import leap
 
 
 class NaNError(Exception):
@@ -41,7 +42,7 @@ class SparseMatrixBuilder(ABC):
 
 
 def get_njobs(n_jobs):
-    return qc.env["N_JOBS"] if n_jobs is None else n_jobs
+    return leap.env["N_JOBS"] if n_jobs is None else n_jobs
 
 
 def true_acc(h: BaseEstimator, acc_fn: Callable, U: LabelledCollection):
@@ -100,8 +101,8 @@ def parallel(
     def func_dec(qp_environ, qc_environ, seed, *args):
         qp.environ = qp_environ.copy()
         qp.environ["N_JOBS"] = 1
-        qc.env = qc_environ.copy()
-        qc.env["N_JOBS"] = 1
+        leap.env = qc_environ.copy()
+        leap.env["N_JOBS"] = 1
         # set a context with a temporal seed to ensure results are reproducibles in parallel
         with ExitStack() as stack:
             if seed is not None:
@@ -110,7 +111,7 @@ def parallel(
 
     _returnas = "list" if return_as == "array" else return_as
     with ExitStack() as stack:
-        stack.enter_context(qc.commons.temp_force_njobs(qc.env["FORCE_NJOBS"]))
+        stack.enter_context(leap.commons.temp_force_njobs(leap.env["FORCE_NJOBS"]))
         out = Parallel(
             n_jobs=n_jobs,
             return_as=_returnas,
@@ -119,7 +120,7 @@ def parallel(
             batch_size=batch_size,
             max_nbytes=max_nbytes,
         )(
-            delayed(func_dec)(qp.environ, qc.env, None if seed is None else seed + i, args_i)
+            delayed(func_dec)(qp.environ, leap.env, None if seed is None else seed + i, args_i)
             for i, args_i in enumerate(args_list)
         )
 
