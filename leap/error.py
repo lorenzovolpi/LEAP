@@ -46,6 +46,10 @@ def f1_macro(param1, param2=None):
     return f1(param1, param2, average="macro")
 
 
+def f1_micro(param1, param2=None):
+    return f1(param1, param2, average="micro")
+
+
 def _vanilla_acc_from_ct(cont_table):
     return np.diag(cont_table).sum() / cont_table.sum()
 
@@ -67,17 +71,15 @@ def _f1_from_ct(cont_table, average):
         return np.mean(f1_per_class)
     elif average == "micro":
         tp, fp, fn = 0, 0, 0
-        for i in range(n):
-            tp += cont_table[i, i]
-            fp += cont_table[:, i].sum() - tp
-            fn += cont_table[i, :].sum() - tp
+        tp = np.diag(cont_table).sum()
+        fp = fn = cont_table.sum() - tp
         return _f1_bin(tp, fp, fn)
     else:
         raise ValueError(f"Unknown F1 average {average}")
 
 
 def _f1_bin(tp, fp, fn):
-    if tp + fp + fn == 0:
+    if 2 * tp + fp + fn == 0:
         return 1
     else:
         return (2 * tp) / (2 * tp + fp + fn)
