@@ -6,12 +6,12 @@
 name = "leap"
 version = "0.1.2"
 readme = "README.md"
-authors = {
+authors = [
   {name = "Lorenzo Volpi", email = "lorenzo.volpi@isti.cnr.it"}
-}
-maintainers = {
+]
+maintainers = [
   {name = "Lorenzo Volpi", email = "lorenzo.volpi@isti.cnr.it"}
-}
+]
 description = "Code for the experiments reported in the paper \"LEAP: Linear Equations for Classifier Accuracy1 Prediction under Prior Probability Shift\""
 requires-python = ">=3.10"
 dependencies = [
@@ -21,6 +21,7 @@ dependencies = [
   "lascal @ git+https://github.com/tpopordanoska/label-shift-calibration.git",
   "torch>=2.7.1",
   "rich>=14.0.0",
+  "pot>=0.9.5",
 ]
 
 [project.urls]
