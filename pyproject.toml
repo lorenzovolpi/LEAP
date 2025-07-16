@@ -2,7 +2,12 @@
 name = "leap"
 version = "0.1.0"
 requires-python = ">=3.10"
-dependencies = ["quapy>=0.1.8", "seaborn>=0.13.2", "certifi>=2024.2.2"]
+dependencies = [
+  "quapy>=0.1.9", 
+  "seaborn>=0.13.2", 
+  "cvxpy>=1.6.6",
+  "lascal @ git+https://github.com/tpopordanoska/label-shift-calibration.git",
+]
 
 [tool.ruff]
 line-length = 120
