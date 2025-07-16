@@ -4,7 +4,15 @@
 
 [project]
 name = "leap"
-version = "0.1.0"
+version = "0.1.2"
+readme = "README.md"
+authors = {
+  {name = "Lorenzo Volpi", email = "lorenzo.volpi@isti.cnr.it"}
+}
+maintainers = {
+  {name = "Lorenzo Volpi", email = "lorenzo.volpi@isti.cnr.it"}
+}
+description = "Code for the experiments reported in the paper \"LEAP: Linear Equations for Classifier Accuracy1 Prediction under Prior Probability Shift\""
 requires-python = ">=3.10"
 dependencies = [
   "quapy>=0.1.9",
@@ -14,6 +22,9 @@ dependencies = [
   "torch>=2.7.1",
   "rich>=14.0.0",
 ]
+
+[project.urls]
+Repository = "https://github.com/lorenzovolpi/LEAP"
 
 [tool.setuptools.packages.find]
 include = ["leap", "leap.*"]
