@@ -1,4 +1,3 @@
-import itertools as IT
 import os
 from dataclasses import dataclass
 from traceback import print_exception
@@ -11,7 +10,6 @@ from sklearn.base import BaseEstimator
 from sklearn.base import clone as skl_clone
 from sklearn.linear_model import LogisticRegression
 
-import exp.config as cfg
 import exp.env as env
 import leap
 from exp.leap.config import DatasetBundle, is_excluded, kdey
