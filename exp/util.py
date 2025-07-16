@@ -7,13 +7,12 @@ from time import time
 
 import numpy as np
 import pandas as pd
-from quacc.models.cont_table import LEAP
 
 import exp.env as env
 import leap
 from exp.config import gen_acc_measure, get_method_names, is_excluded
 from leap.models.base import ClassifierAccuracyPrediction
-from leap.models.cont_table import CAPContingencyTable
+from leap.models.cont_table import LEAP, CAPContingencyTable
 
 
 def local_path(dataset_name, cls_name, method_name, acc_name, subproject=None):

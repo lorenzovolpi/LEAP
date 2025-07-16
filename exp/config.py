@@ -1,11 +1,8 @@
-import json
-import os
 from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
 import quapy as qp
-import torch
 from quapy.data import LabelledCollection
 from quapy.data.datasets import UCI_BINARY_DATASETS, UCI_MULTICLASS_DATASETS
 from quapy.method.aggregative import ACC, CC, KDEyML
@@ -18,8 +15,6 @@ from sklearn.neural_network import MLPClassifier as MLP
 from sklearn.svm import SVC
 
 import exp.env as env
-import leap
-from exp.util import split_validation
 from leap.commons import contingency_table
 from leap.data.datasets import (
     fetch_UCIBinaryDataset,
@@ -27,7 +22,6 @@ from leap.data.datasets import (
     sort_datasets_by_size,
 )
 from leap.error import f1, f1_macro, vanilla_acc
-from leap.models._large_models import BaseEstimatorAdapter
 from leap.models.cont_table import CBPE, LEAP, O_LEAP, S_LEAP, NaiveCAP
 from leap.models.direct import ATC, COT, Q_COT, DispersionScore, DoC, NuclearNorm
 from leap.models.utils import OracleQuantifier
@@ -42,6 +36,12 @@ _toggle = {
     "slsqp": False,
     "oracle": False,
 }
+
+
+def split_validation(V: LabelledCollection, ratio=0.6, repeats=100, sample_size=None):
+    v_train, v_val = V.split_stratified(ratio, random_state=qp.environ["_R_SEED"])
+    val_prot = UPP(v_val, repeats=repeats, sample_size=sample_size, return_type="labelled_collection")
+    return v_train, val_prot
 
 
 @dataclass
@@ -171,40 +171,7 @@ def gen_datasets(only_names=False):
             yield dataset_name, dval
 
 
-def gen_transformer_model_dataset(only_dataset_names=False, only_model_names=False):
-    dataset_model = [
-        ("imdb", "bert-base-uncased"),
-    ]
-
-    if only_dataset_names:
-        return [d for d, _ in dataset_model]
-    if only_model_names:
-        return [m for _, m in dataset_model]
-
-    for dataset_name, model_name in dataset_model:
-        parent_dir = os.path.join(leap.env["OUT_DIR"], "trainsformers", "embeds", dataset_name, model_name)
-
-        V_X = torch.load(os.path.join(parent_dir, "hidden_states.validation.pt")).numpy()
-        V_logits = torch.load(os.path.join(parent_dir, "logits.validation.pt")).numpy()
-        V_labels = torch.load(os.path.join(parent_dir, "labels.validation.pt")).numpy()
-        U_X = torch.load(os.path.join(parent_dir, "hidden_states.test.pt")).numpy()
-        U_logits = torch.load(os.path.join(parent_dir, "logits.test.pt")).numpy()
-        U_labels = torch.load(os.path.join(parent_dir, "labels.test.pt")).numpy()
-
-        V = LabelledCollection(V_X, V_labels, classes=np.unique(V_labels))
-        U = LabelledCollection(U_X, U_labels, classes=np.unique(U_labels))
-
-        model = BaseEstimatorAdapter(V_X, U_X, V_logits, U_logits)
-
-        with open(os.path.join(parent_dir, "dataset_info.json")) as f:
-            dataset_info = json.load(f)
-            L_prev = np.array(dataset_info["L_prev"])
-
-        yield (model_name, model), (dataset_name, (V, U), L_prev)
-
-
 def gen_acc_measure():
-    multiclass = env.PROBLEM == "multiclass"
     if _toggle["vanilla"]:
         yield "vanilla_accuracy", vanilla_acc
     if _toggle["f1"]:
@@ -212,7 +179,6 @@ def gen_acc_measure():
             yield "f1", f1
         elif env.PROBLEM == "multiclass":
             yield "macro_f1", f1_macro
-            # yield "micro_f1", f1_micro
 
 
 def gen_baselines(acc_fn):
@@ -223,8 +189,6 @@ def gen_baselines(acc_fn):
     yield "CBPE", CBPE(acc_fn)
     yield "NN", NuclearNorm(acc_fn)
     yield "Q-COT", Q_COT(acc_fn, kdey())
-    # yield "QuAccNxN(KDEy)", QuAccNxN(acc_fn, kdey(), add_X=True, add_posteriors=True, add_maxinfsoft=True)
-    # yield "QuAccNxN(KDEy-a)", QuAccNxN(acc_fn, kdey_auto(), add_X=True, add_posteriors=True, add_maxinfsoft=True)
 
 
 def gen_baselines_vp(acc_fn, D):
@@ -328,16 +292,8 @@ def get_classifier_names():
     return [name for name, _ in gen_classifiers()]
 
 
-def get_tr_classifier_names():
-    return gen_transformer_model_dataset(only_model_names=True)
-
-
 def get_dataset_names():
     return [name for name, _ in gen_datasets(only_names=True)]
-
-
-def get_tr_dataset_names():
-    return gen_transformer_model_dataset(only_dataset_names=True)
 
 
 def get_acc_names():
@@ -361,7 +317,6 @@ def get_method_names(with_oracle=True):
 
 
 def is_excluded(classifier, dataset, method, acc):
-    # return (acc == "f1" or acc == "macro_f1") and method == "Q-COT"
     return False
 
 
