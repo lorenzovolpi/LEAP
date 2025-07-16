@@ -1,14 +1,35 @@
 import itertools as IT
+import random
 from typing import Callable
 
 import numpy as np
+import ot
+import quacc as qc
+import quacc.models.utils as utils
+import quapy as qp
+import scipy as sp
+from quacc.error import vanilla_acc
+from quacc.models.base import ClassifierAccuracyPrediction
+from quacc.models.utils import max_conf, neg_entropy
 from quapy.data.base import LabelledCollection
-from quapy.protocol import AbstractProtocol
+from quapy.method.aggregative import AggregativeQuantifier
+from quapy.protocol import UPP, AbstractProtocol
+from scipy.sparse import issparse
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import confusion_matrix
 
-from leap.models.base import ClassifierAccuracyPrediction
-from leap.models.utils import max_conf, neg_entropy
+
+def _one_hot(arr: np.ndarray, num_classes=None):
+    assert arr.ndim == 1, "too many dimensions for input array"
+    num_classes = num_classes if num_classes else np.max(arr)
+    return np.eye(num_classes)[arr]
+
+
+def _sample_label_dist(sample_size, val_prior, n_classes):
+    labels = sum([[i] * int(val_prior[i] * sample_size) for i in range(n_classes)], start=[])
+    rem = sample_size - len(labels)
+    rem_labels = random.choices(list(range(n_classes)), weights=val_prior, k=rem)
+    return np.asarray(labels + rem_labels)
 
 
 class CAPDirect(ClassifierAccuracyPrediction):
@@ -137,3 +158,232 @@ class DoC(CAPDirect):
         if self.clip_vals is not None:
             acc_pred = float(np.clip(acc_pred, *self.clip_vals))
         return acc_pred
+
+
+class DispersionScore(CAPDirect):
+    def __init__(self, acc_fn: Callable, val_samples=100, clip_vals=(0, 1)):
+        super().__init__(acc_fn)
+        self.val_samples = 100
+        self.clip_vals = clip_vals
+
+    def _get_ds(self, X, post):
+        y_hat = np.argmax(post, axis=-1)
+        _mu = safe_mean(X, axis=0)
+
+        def _get_mui(i):
+            # check if any class has no datapoints; if so, set corresponding
+            # value in _mus to _mu in order to make corresponding value in
+            # _mus_l2sq to 0 to avoid nan values and mean errors
+            X_i = X[y_hat == i, :]
+            return safe_mean(X_i, axis=0) if X_i.shape[0] > 0 else _mu
+
+        _mus = np.array([_get_mui(i) for i in self.classes_])
+        _mus_l2sq = np.sum((_mu - _mus) ** 2, axis=-1)
+        _weights = np.array([np.sum(y_hat == i) for i in self.classes_]) / y_hat.shape[0]
+        dispersion_score = np.log(np.sum(_weights * _mus_l2sq) / (self.n_classes - 1) + 1e-5)
+        return dispersion_score
+
+    def _get_acc(self, y, post):
+        y_hat = np.argmax(post, axis=-1)
+        return vanilla_acc(y, y_hat)
+
+    def train_reg_model(self, _dss, _accs):
+        _dss = np.asarray(_dss).reshape(-1, 1)
+        _accs = np.asarray(_accs)
+        lin_reg = LinearRegression()
+        return lin_reg.fit(_dss, _accs)
+
+    def predict_reg_model(self, _ds):
+        _ds = np.asarray([_ds]).reshape(-1, 1)
+        return self.reg_model.predict(_ds)
+
+    def fit(self, val: LabelledCollection, posteriors):
+        val_prot = UPP(
+            val,
+            repeats=self.val_samples,
+            random_state=qp.environ["_R_SEED"],
+            return_type="index",
+        )
+
+        self.classes_ = val.classes_
+        self.n_classes = val.n_classes
+        _dss = [self._get_ds(val.X[idx, :], posteriors[idx, :]) for idx in val_prot()]
+        _accs = [self._get_acc(val.y[idx], posteriors[idx, :]) for idx in val_prot()]
+        self.reg_model = self.train_reg_model(_dss, _accs)
+
+        return self
+
+    def predict(self, X, posteriors):
+        _ds = self._get_ds(X, posteriors)
+        acc_pred = self.predict_reg_model(_ds)[0]
+        if self.clip_vals is not None:
+            acc_pred = float(np.clip(acc_pred, *self.clip_vals))
+        return acc_pred
+
+
+class NuclearNorm(CAPDirect):
+    def __init__(self, acc_fn: Callable, val_samples=100, clip_vals=(0, 1)):
+        super().__init__(acc_fn)
+        self.val_samples = 100
+        self.clip_vals = clip_vals
+
+    def _get_nuc_norm(self, P):
+        return np.linalg.norm(P, ord="nuc") * np.sqrt(min(P.shape[0], P.shape[1]) * P.shape[0])
+
+    def _get_acc(self, y, post):
+        y_hat = np.argmax(post, axis=-1)
+        return vanilla_acc(y, y_hat)
+
+    def train_reg_model(self, _nns, _accs):
+        _nns = np.asarray(_nns).reshape(-1, 1)
+        _accs = np.asarray(_accs)
+        lin_reg = LinearRegression()
+        return lin_reg.fit(_nns, _accs)
+
+    def predict_reg_model(self, _ds):
+        _ds = np.asarray([_ds]).reshape(-1, 1)
+        return self.reg_model.predict(_ds)
+
+    def fit(self, val: LabelledCollection, posteriors):
+        val_prot = UPP(
+            val,
+            repeats=self.val_samples,
+            random_state=qp.environ["_R_SEED"],
+            return_type="index",
+        )
+
+        self.classes_ = val.classes_
+        self.n_classes = val.n_classes
+        _nns = [self._get_nuc_norm(posteriors[idx, :]) for idx in val_prot()]
+        _accs = [self._get_acc(val.y[idx], posteriors[idx, :]) for idx in val_prot()]
+        self.reg_model = self.train_reg_model(_nns, _accs)
+
+        return self
+
+    def predict(self, X, posteriors):
+        _nn = self._get_nuc_norm(posteriors)
+        acc_pred = self.predict_reg_model(_nn)[0]
+        if self.clip_vals is not None:
+            acc_pred = float(np.clip(acc_pred, *self.clip_vals))
+        return acc_pred
+
+
+class COT(CAPDirect):
+    def __init__(self, acc_fn: Callable, emd_max_iter=1e8, exact_train_prev=True):
+        super().__init__(acc_fn)
+        self.emd_max_iter = emd_max_iter
+        self.exact_train_prev = exact_train_prev
+
+    def fit(self, val: LabelledCollection, posteriors):
+        self.n_classes = val.n_classes
+        self.classes = val.classes_
+
+        # val_y = val.y
+        # val_y_hat = np.argmax(posteriors, axis=-1)
+        # print(val_y, val_y_hat)
+        # print(val_y.shape, val_y_hat.shape)
+        # self.val_labels = LabelledCollection(val_y_hat, val_y, classes=self.classes)
+
+        self.val_prior = val.prevalence()
+
+        return self
+
+    def predict(self, X, posteriors):
+        sample_size = X.shape[0]
+
+        # val_y_hat, val_y = self.val_labels.uniform_sampling(sample_size).Xy
+        # val_lbls = val_y if self.exact_train_prev else val_y_hat
+
+        val_lbls = _sample_label_dist(sample_size, self.val_prior, self.n_classes)
+
+        val_one_hot = _one_hot(val_lbls, num_classes=self.n_classes)
+
+        M = sp.spatial.distance.cdist(val_one_hot, posteriors, "minkowski", p=1) / 2
+        weights = np.asarray([])
+        Pi = ot.emd(weights, weights, M, numItermax=self.emd_max_iter)
+        costs = (Pi * M.shape[0] * M).sum(axis=1)
+        return 1 - costs.mean()
+
+
+class COTT(CAPDirect):
+    def __init__(self, acc_fn: Callable, emd_max_iter=1e8, exact_train_prev=True):
+        super().__init__(acc_fn)
+        self.emd_max_iter = emd_max_iter
+        self.exact_train_prev = exact_train_prev
+
+    def _get_threshold(self, val: LabelledCollection, val_posteriors):
+        val_y_hat = np.argmax(val_posteriors, axis=-1)
+        val_y_oh = _one_hot(val.y, num_classes=self.n_classes)
+        M = sp.spatial.distance.cdist(val_y_oh, val_posteriors, "minkowski", p=1)
+        weights = np.asarray([])
+        Pi = ot.emd(weights, weights, M, numItermax=self.emd_max_iter)
+        costs = (Pi * M.shape[0] * M).sum(axis=1) * -1
+
+        n_incorrect = (val.y != val_y_hat).sum()
+        t = np.sort(costs)[n_incorrect - 1]
+        return t
+
+    def fit(self, val: LabelledCollection, posteriors):
+        self.n_classes = val.n_classes
+        self.classes = val.classes_
+
+        # val_y = val.y
+        # val_y_hat = np.argmax(posteriors, axis=-1)
+        # self.val_labels = LabelledCollection(val_y_hat, val_y, classes=self.classes)
+
+        self.val_prior = val.prevalence()
+        self.threshold = self._get_threshold(val, posteriors)
+
+        return self
+
+    def predict(self, X, posteriors):
+        sample_size = X.shape[0]
+
+        # val_y_hat, val_y = self.val_labels.uniform_sampling(sample_size).Xy
+        # val_lbls = val_y if self.exact_train_prev else val_y_hat
+
+        val_lbls = _sample_label_dist(sample_size, self.val_prior, self.n_classes)
+        val_one_hot = _one_hot(val_lbls, num_classes=self.n_classes)
+
+        M = sp.spatial.distance.cdist(val_one_hot, posteriors, "minkowski", p=1)
+        weights = np.asarray([])
+        Pi = ot.emd(weights, weights, M, numItermax=self.emd_max_iter)
+        costs = (Pi * M.shape[0] * M).sum(axis=1) * -1
+        est_err = (costs < self.threshold).sum() / sample_size
+        return 1 - est_err
+
+
+class Q_COT(CAPDirect):
+    def __init__(self, acc_fn: Callable, q: AggregativeQuantifier, emd_max_iter=1e8, exact_train_prev=True):
+        super().__init__(acc_fn)
+        self.q = q
+        self.emd_max_iter = emd_max_iter
+        self.exact_train_prev = exact_train_prev
+
+    def fit(self, val: LabelledCollection, posteriors):
+        self.n_classes = val.n_classes
+        self.classes = val.classes_
+        self.q.fit(val)
+
+        return self
+
+    def predict(self, X, posteriors):
+        sample_size = X.shape[0]
+
+        test_q_priors = self.q.quantify(X)
+        test_q_labels = _sample_label_dist(sample_size, test_q_priors, self.n_classes)
+
+        test_q_one_hot = _one_hot(test_q_labels, num_classes=self.n_classes)
+
+        M = sp.spatial.distance.cdist(test_q_one_hot, posteriors, "minkowski", p=1) / 2
+        weights = np.asarray([])
+        Pi = ot.emd(weights, weights, M, numItermax=self.emd_max_iter)
+        costs = (Pi * M.shape[0] * M).sum(axis=1)
+        return 1 - costs.mean()
+
+
+def safe_mean(X, axis=None):
+    if issparse(X):
+        return np.array(X.mean(axis=axis)).squeeze()
+    else:
+        return np.mean(X, axis=axis)
