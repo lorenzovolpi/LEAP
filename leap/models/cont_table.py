@@ -5,15 +5,6 @@ from typing import Callable, override
 
 import numpy as np
 import scipy
-from quacc.models._leap_opt import (
-    _optim_Adam,
-    _optim_Adam_batched,
-    _optim_cvxpy,
-    _optim_lsq_linear,
-    _optim_minimize,
-)
-from quacc.models.base import ClassifierAccuracyPrediction
-from quacc.utils.commons import SparseMatrixBuilder
 from quapy.data.base import LabelledCollection as LC
 from quapy.functional import prevalence_from_labels
 from quapy.method.aggregative import PCC, AggregativeQuantifier
@@ -22,6 +13,15 @@ from sklearn.base import BaseEstimator
 from sklearn.metrics import confusion_matrix
 
 from calibration.lascal import LasCal
+from leap.models._leap_opt import (
+    _optim_Adam,
+    _optim_Adam_batched,
+    _optim_cvxpy,
+    _optim_lsq_linear,
+    _optim_minimize,
+)
+from leap.models.base import ClassifierAccuracyPrediction
+from leap.utils.commons import SparseMatrixBuilder
 
 
 class LabelledCollection(LC):
