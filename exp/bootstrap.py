@@ -4,7 +4,6 @@ from traceback import print_exception
 from typing import override
 
 import numpy as np
-import quacc as qc
 import quapy as qp
 from quapy.data import LabelledCollection
 from quapy.protocol import UPP
@@ -13,7 +12,8 @@ from sklearn.base import clone as skl_clone
 from sklearn.linear_model import LogisticRegression
 from sklearn.utils import resample
 
-import exp.leap.env as env
+import exp.env as env
+import leap
 from exp.leap.config import (
     EXP,
     DatasetBundle,
@@ -160,7 +160,7 @@ def exp_protocol(args):
             results.append(EXP.ERROR(e, cls_name, dataset_name, acc_name, method_name))
             continue
 
-        ae = qc.error.ae(np.array(true_accs[acc_name]), np.array(estim_accs)).tolist()
+        ae = leap.error.ae(np.array(true_accs[acc_name]), np.array(estim_accs)).tolist()
 
         df_len = len(estim_accs)
         method_df = gen_method_df(
@@ -221,7 +221,7 @@ def experiments():
     cls_dataset_gen = parallel(
         func=train_cls,
         args_list=cls_train_args,
-        n_jobs=qc.env["N_JOBS"],
+        n_jobs=leap.env["N_JOBS"],
         return_as="generator_unordered",
     )
     cls_dataset = []
@@ -242,7 +242,7 @@ def experiments():
     results_gen = parallel(
         func=exp_protocol,
         args_list=exp_prot_args_list,
-        n_jobs=qc.env["N_JOBS"],
+        n_jobs=leap.env["N_JOBS"],
         return_as="generator_unordered",
         max_nbytes=None,
     )

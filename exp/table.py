@@ -1,8 +1,6 @@
 import dataclasses
-import glob
 import itertools as IT
 import os
-import pdb
 import pickle
 import subprocess
 from abc import ABC
@@ -11,16 +9,12 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from quapy.functional import projection_simplex_sort
 
-import exp.leap.config as cfg
-import exp.leap.env as env
+import exp.env as env
 from exp.leap.config import (
     get_acc_names,
-    get_baseline_names,
     get_classifier_names,
     get_dataset_names,
-    get_method_names,
 )
 from exp.leap.util import decorate_datasets, load_results, rename_datasets, rename_methods
 from leap.commons import NaNError

@@ -4,12 +4,11 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
-import quacc as qc
 import quapy as qp
 import torch
 from quapy.data import LabelledCollection
 from quapy.data.datasets import UCI_BINARY_DATASETS, UCI_MULTICLASS_DATASETS
-from quapy.method.aggregative import ACC, CC, EMQ, DistributionMatchingY, KDEyML
+from quapy.method.aggregative import ACC, CC, KDEyML
 from quapy.protocol import UPP, AbstractStochasticSeededProtocol
 from sklearn.base import BaseEstimator
 from sklearn.ensemble import RandomForestClassifier as RFC
@@ -18,16 +17,16 @@ from sklearn.neighbors import KNeighborsClassifier as KNN
 from sklearn.neural_network import MLPClassifier as MLP
 from sklearn.svm import SVC
 
-import exp.leap.env as env
+import exp.env as env
+import leap
 from exp.util import split_validation
 from leap.commons import contingency_table
 from leap.data.datasets import (
-    fetch_RCV1WholeDataset,
     fetch_UCIBinaryDataset,
     fetch_UCIMulticlassDataset,
     sort_datasets_by_size,
 )
-from leap.error import f1, f1_macro, f1_micro, vanilla_acc
+from leap.error import f1, f1_macro, vanilla_acc
 from leap.models._large_models import BaseEstimatorAdapter
 from leap.models.cont_table import CBPE, LEAP, OCE, PHD, NaiveCAP
 from leap.models.direct import ATC, COT, Q_COT, DispersionScore, DoC, NuclearNorm
@@ -183,7 +182,7 @@ def gen_transformer_model_dataset(only_dataset_names=False, only_model_names=Fal
         return [m for _, m in dataset_model]
 
     for dataset_name, model_name in dataset_model:
-        parent_dir = os.path.join(qc.env["OUT_DIR"], "trainsformers", "embeds", dataset_name, model_name)
+        parent_dir = os.path.join(leap.env["OUT_DIR"], "trainsformers", "embeds", dataset_name, model_name)
 
         V_X = torch.load(os.path.join(parent_dir, "hidden_states.validation.pt")).numpy()
         V_logits = torch.load(os.path.join(parent_dir, "logits.validation.pt")).numpy()

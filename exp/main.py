@@ -1,18 +1,13 @@
-import itertools as IT
 import os
 from argparse import ArgumentParser
-from dataclasses import dataclass
-from pathlib import Path
 from traceback import print_exception
 
 import numpy as np
-import pandas as pd
-import quacc as qc
 import quapy as qp
 from sklearn.base import clone as skl_clone
 
-import exp.leap.config as cfg
-import exp.leap.env as env
+import exp.env as env
+import leap
 from exp.leap.config import (
     EXP,
     DatasetBundle,
@@ -21,7 +16,6 @@ from exp.leap.config import (
     gen_datasets,
     gen_methods,
     get_acc_names,
-    get_method_names,
     is_excluded,
 )
 from exp.leap.util import all_exist_pre_check, gen_method_df, get_extra_from_method, local_path
@@ -70,7 +64,7 @@ def exp_protocol(args):
             results.append(EXP.ERROR(e, cls_name, dataset_name, acc_name, method_name))
             continue
 
-        ae = qc.error.ae(np.array(true_accs[acc_name]), np.array(estim_accs)).tolist()
+        ae = leap.error.ae(np.array(true_accs[acc_name]), np.array(estim_accs)).tolist()
 
         df_len = len(estim_accs)
         method_df = gen_method_df(
@@ -128,7 +122,7 @@ def experiments():
     cls_dataset_gen = parallel(
         func=train_cls,
         args_list=cls_train_args,
-        n_jobs=qc.env["N_JOBS"],
+        n_jobs=leap.env["N_JOBS"],
         return_as="generator_unordered",
     )
     cls_dataset = []
@@ -158,7 +152,7 @@ def experiments():
     results_gen = parallel(
         func=exp_protocol,
         args_list=exp_prot_args_list,
-        n_jobs=qc.env["N_JOBS"],
+        n_jobs=leap.env["N_JOBS"],
         return_as="generator_unordered",
         max_nbytes=None,
     )

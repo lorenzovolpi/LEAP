@@ -12,12 +12,12 @@ import seaborn as sns
 from matplotlib.pyplot import close
 from matplotlib.ticker import LogLocator, MultipleLocator
 
-import exp.leap.config as cfg
-import exp.leap.env as env
-from exp.leap.config import get_acc_names, get_classifier_names, get_dataset_names
-from exp.leap.util import load_results, rename_datasets, rename_methods
-from quacc.plot.seaborn import plot_diagonal_grid
-from quacc.plot.utils import get_binned_values, save_figure
+import exp.config as cfg
+import exp.env as env
+from exp.config import get_acc_names, get_classifier_names, get_dataset_names
+from exp.util import load_results, rename_datasets, rename_methods
+from leap.plot.seaborn import plot_diagonal_grid
+from leap.plot.utils import get_binned_values, save_figure
 
 method_map = {
     # "Naive": 'Na\\"ive',
