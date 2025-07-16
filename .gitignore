@@ -17,3 +17,7 @@
 
 # results
 output/tables
+
+# python files
+*.egg-info
+*.lock
