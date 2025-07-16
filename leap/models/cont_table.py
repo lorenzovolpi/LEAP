@@ -12,7 +12,7 @@ from quapy.protocol import AbstractProtocol
 from sklearn.base import BaseEstimator
 from sklearn.metrics import confusion_matrix
 
-from calibration.lascal import LasCal
+from leap.calibration import LasCal
 from leap.commons import SparseMatrixBuilder
 from leap.models._leap_opt import (
     _optim_Adam,
