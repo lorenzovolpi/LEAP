@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["leap"]
+include = ["leap", "leap.*"]
 
 [tool.ruff]
 line-length = 120
