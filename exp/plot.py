@@ -167,6 +167,7 @@ def plots():
 
             print(f"Plotted {name} for {cls_name} [{acc}]")
 
+
 def plot_sample_size():
     from exp.sample_size import get_acc_names as ss_acc_names
     from exp.sample_size import get_classifier_names as ss_classifier_names
@@ -455,58 +456,6 @@ def plot_by_shift():
         print(f"Plotted {cls_name} - {acc} - {env.PROBLEM}")
 
 
-def plot_pseudo_label_shift():
-    def get_pseudo_label_shift(df: pd.DataFrame, datasets: list[str]):
-        for d in datasets:
-            _df = df.loc[df["dataset"] == d, :]
-            true_cts = np.stack(_df["true_cts"].to_numpy(), axis=0)
-            _posteriors = true_cts.sum(axis=1)
-            _priors = true_cts.sum(axis=2)
-            pl_shift = np.abs(_priors - _posteriors).sum(axis=1)
-            df.loc[df["dataset"] == d, "pl_shift"] = pl_shift
-
-    n_bins = 20
-    classifiers = ["LR"]
-    accs = ["vanilla_accuracy"]
-    datasets = get_dataset_names()
-    methods = [
-        # "DoC",
-        "LEAP(ACC)",
-        "LEAP(KDEy-MLP)",
-        "O-LEAP(KDEy-MLP)",
-    ]
-
-    for acc, cls_name in IT.product(accs, classifiers):
-        df = load_results(acc=acc, classifier=cls_name, filter_methods=methods)
-        get_pseudo_label_shift(df, datasets)
-        df.loc[:, "pl_shift_bin"] = get_binned_values(df, "pl_shift", n_bins)
-        _methods, df = rename_methods(method_map, methods, df=df)
-
-        base_dir = os.path.join(env.root_dir, "plots", "pl_shift")
-        os.makedirs(base_dir, exist_ok=True)
-
-        # plot cumulative data for all datasets
-        plot = sns.lineplot(
-            data=df,
-            x="pl_shift_bin",
-            y="acc_err",
-            hue="method",
-            hue_order=_methods,
-            estimator="mean",
-            errorbar="se",
-            err_style="bars",
-            err_kws=dict(capsize=2.0, capthick=1.0),
-            linewidth=1,
-            # palette=sns.color_palette("Paired")[:10] + sns.color_palette("Paired")[11:],
-        )
-        plot.set_xlabel("Amount of pseudo-label shift")
-        plot.set_ylabel("AE")
-
-        sns.move_legend(plot, "center right", bbox_to_anchor=(1.2, 0.5), title=None, frameon=False)
-        save_figure(plot=plot, basedir=base_dir, filename=f"pl_shift_{cls_name}_{env.PROBLEM}")
-        print(f"Plotted {cls_name} - {acc} - {env.PROBLEM}")
-
-
 def plot_qerr():
     from exp.qerr import get_acc_names as qerr_accs
     from exp.qerr import get_classifier_names as qerr_clssifiers
@@ -592,13 +541,12 @@ if __name__ == "__main__":
         "-p", "--problem", action="store", default="binary", help="Select the problem you want to generate plots for"
     )
     parser.add_argument("--main", action="store_true", help="Plots for main experiments")
-    parser.add_argument("--ss", action="store_true", help="Plots for sample_size experiments")
+    parser.add_argument("--ssize", action="store_true", help="Plots for sample_size experiments")
     parser.add_argument("--times", action="store_true", help="Plots for times obtained in main experiments")
     parser.add_argument(
         "--ctdiff", action="store_true", help="Plots for contingency table diffs obtained in main experiments"
     )
     parser.add_argument("--shift", action="store_true", help="Plots accuracy error by amount of PPS")
-    parser.add_argument("--pseudo", action="store_true", help="Plots accuracy error by amount of pseudo-label shift")
     parser.add_argument("--qerr", action="store_true", help="Plots accuracy error by amount of quantification error")
     args = parser.parse_args()
 
@@ -616,8 +564,6 @@ if __name__ == "__main__":
         plot_ctdiffs()
     elif args.shift:
         plot_by_shift()
-    elif args.pseudo:
-        plot_pseudo_label_shift()
     elif args.qerr:
         plot_qerr()
     else:
